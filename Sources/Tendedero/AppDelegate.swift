@@ -655,6 +655,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
+        let brandItem = NSMenuItem(title: "Tendedero Plus (v1.5.0-plus)", action: nil, keyEquivalent: "")
+        brandItem.isEnabled = false
+        menu.addItem(brandItem)
+        menu.addItem(.separator())
+
         let toggleItem = ClosureMenuItem(isRevealed ? L("Hide line") : L("Show line")) { [weak self] in
             self?.toggle()
         }
@@ -795,7 +800,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         })
 
         menu.addItem(.separator())
-        menu.addItem(ClosureMenuItem(L("Quit Tendedero"), key: "q") {
+        menu.addItem(ClosureMenuItem(L("Quit Tendedero Plus"), key: "q") {
             NSApp.terminate(nil)
         })
     }

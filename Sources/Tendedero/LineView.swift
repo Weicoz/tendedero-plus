@@ -62,6 +62,9 @@ struct LineView: View {
             ZStack(alignment: .topLeading) {
                 Rope(width: width)
 
+                BrandBadge()
+                    .position(x: max(60, width - 68), y: Layout.ropeTop + 6)
+
                 if line.items.isEmpty {
                     Hint()
                         .position(x: width / 2, y: Layout.ropeY(x: width / 2, width: width) + 34)
@@ -93,14 +96,43 @@ struct LineView: View {
     }
 }
 
+private struct BrandBadge: View {
+    var body: some View {
+        HStack(spacing: 4) {
+            Text("TENDEDERO")
+                .font(.system(size: 8, weight: .bold, design: .rounded))
+                .foregroundStyle(.secondary)
+            Text("PLUS")
+                .font(.system(size: 7.5, weight: .black, design: .rounded))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 4)
+                .padding(.vertical, 1.5)
+                .background(Color.accentColor, in: Capsule())
+        }
+        .padding(.horizontal, 8)
+        .padding(.vertical, 3.5)
+        .background(.ultraThinMaterial, in: Capsule())
+        .overlay(Capsule().strokeBorder(Color.white.opacity(0.18), lineWidth: 0.5))
+        .allowsHitTesting(false)
+    }
+}
+
 private struct Hint: View {
     var body: some View {
-        Text(L("Take a screenshot and it will hang here"))
-            .font(.system(size: 12, weight: .medium, design: .rounded))
-            .foregroundStyle(.secondary)
-            .padding(.horizontal, 12)
-            .padding(.vertical, 6)
-            .background(.regularMaterial, in: Capsule())
+        HStack(spacing: 6) {
+            Text("PLUS")
+                .font(.system(size: 8, weight: .black, design: .rounded))
+                .foregroundStyle(.white)
+                .padding(.horizontal, 5)
+                .padding(.vertical, 1.5)
+                .background(Color.accentColor, in: Capsule())
+            Text(L("Take a screenshot and it will hang here"))
+                .font(.system(size: 12, weight: .medium, design: .rounded))
+                .foregroundStyle(.secondary)
+        }
+        .padding(.horizontal, 12)
+        .padding(.vertical, 6)
+        .background(.regularMaterial, in: Capsule())
     }
 }
 
