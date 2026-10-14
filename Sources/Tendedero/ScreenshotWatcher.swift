@@ -159,9 +159,11 @@ final class ScreenshotWatcher {
     }
 
     private func listFolder() -> [URL] {
-        let urls = (try? FileManager.default.contentsOfDirectory(
-            at: folder, includingPropertiesForKeys: [.creationDateKey], options: [.skipsHiddenFiles])) ?? []
-        return urls.sorted { creationDate($0) < creationDate($1) }
+        autoreleasepool {
+            let urls = (try? FileManager.default.contentsOfDirectory(
+                at: folder, includingPropertiesForKeys: [.creationDateKey], options: [.skipsHiddenFiles])) ?? []
+            return urls.sorted { creationDate($0) < creationDate($1) }
+        }
     }
 
     private func creationDate(_ url: URL) -> Date {

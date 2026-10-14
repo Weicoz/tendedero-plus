@@ -20,9 +20,11 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private var folderWatchers: [ScreenshotWatcher] = []
     private var clipboardWatcher: ClipboardWatcher!
     private var signalSources: [DispatchSourceSignal] = []
+    private var memoryPressureSource: DispatchSourceMemoryPressure?
     private var hotKey: HotKey?
     private var cancellables = Set<AnyCancellable>()
     private var mouseTimer: Timer?
+    private var cachedScreens: [NSScreen] = NSScreen.screens
 
     /// Whether the panel is ordered in. It can be in and still tucked away
     /// above the top edge, like an auto-hiding Dock.
@@ -114,10 +116,18 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             forName: NSApplication.didChangeScreenParametersNotification, object: nil, queue: .main
         ) { [weak self] _ in
             MainActor.assumeIsolated {
+                self?.cachedScreens = NSScreen.screens
                 self?.panel.placeOnScreen()
                 self?.updateCapacity()
             }
         }
+
+        let memSource = DispatchSource.makeMemoryPressureSource(eventMask: [.warning, .critical], queue: .main)
+        memSource.setEventHandler {
+            malloc_zone_pressure_relief(nil, 0)
+        }
+        memSource.resume()
+        memoryPressureSource = memSource
 
         if !Inbox.wasOffered {
             DispatchQueue.main.asyncAfter(deadline: .now() + 1.2) { [weak self] in self?.offerInbox() }
@@ -260,6 +270,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             guard let self, self.line.liveCount == 0, !self.keepOpen else { return }
             self.wanted = false
             self.refresh()
+            malloc_zone_pressure_relief(nil, 0)
         }
     }
 
@@ -397,6 +408,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
                 guard let self, !self.isRevealed else { return }
                 self.panel.orderOut(nil)
+                malloc_zone_pressure_relief(nil, 0)
             }
         }
         if !on {
@@ -404,6 +416,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             peekUntil = .distantPast
             panel.ignoresMouseEvents = true
         }
+        updateMouseTimerRate()
     }
 
     @objc private func toggle() {
@@ -425,8 +438,21 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     private func startMouseTracking() {
-        guard mouseTimer == nil else { return }
-        let timer = Timer(timeInterval: 1.0 / 30.0, repeats: true) { [weak self] _ in
+        updateMouseTimerRate()
+    }
+
+    /// Adapts the polling rate: when hidden/tucked away, 10 FPS (100ms) is plenty
+    /// to detect hover against the 250ms threshold while slashing CPU wakeups and
+    /// allocation churn by 67%. When revealed, 30 FPS ensures fluid edge tracking.
+    private func updateMouseTimerRate() {
+        guard wanted else {
+            stopMouseTracking()
+            return
+        }
+        let interval: TimeInterval = isRevealed ? (1.0 / 30.0) : 0.10
+        if let current = mouseTimer, abs(current.timeInterval - interval) < 0.001 { return }
+        mouseTimer?.invalidate()
+        let timer = Timer(timeInterval: interval, repeats: true) { [weak self] _ in
             MainActor.assumeIsolated { self?.tick() }
         }
         RunLoop.main.add(timer, forMode: .common)
@@ -458,7 +484,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             MainActor.assumeIsolated {
                 guard let self else { return }
                 let p = NSEvent.mouseLocation
-                guard NSScreen.screens.contains(where: { NSMouseInRect(p, Self.menuBarBand(of: $0), false) }) else { return }
+                guard self.cachedScreens.contains(where: { NSMouseInRect(p, Self.menuBarBand(of: $0), false) }) else { return }
                 self.menuBarSuppressed = true
                 self.hotZoneSince = nil
                 if self.isRevealed {
@@ -478,55 +504,57 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private static let retractDelay: TimeInterval = 0.5
 
     private func tick() {
-        let mouse = NSEvent.mouseLocation
-        let now = Date()
+        autoreleasepool {
+            let mouse = NSEvent.mouseLocation
+            let now = Date()
 
-        let screenUnderPointer = NSScreen.screens.first { NSMouseInRect(mouse, $0.frame, false) }
-        let inMenuBar = screenUnderPointer.map { NSMouseInRect(mouse, Self.menuBarBand(of: $0), false) } ?? false
-        if !inMenuBar { menuBarSuppressed = false }
+            let screenUnderPointer = cachedScreens.first { NSMouseInRect(mouse, $0.frame, false) }
+            let inMenuBar = screenUnderPointer.map { NSMouseInRect(mouse, Self.menuBarBand(of: $0), false) } ?? false
+            if !inMenuBar { menuBarSuppressed = false }
 
-        guard isRevealed else {
-            // Resting in the menu bar brings the line down on that screen.
-            // Pushing against the top edge is part of it, and it also works
-            // when another display sits above and the pointer never stops.
-            if Self.opensFromMenuBar, let screen = screenUnderPointer, inMenuBar, !menuBarSuppressed,
-               !FullScreen.blocksLine(on: screen) {
-                let since = hotZoneSince ?? now
-                hotZoneSince = since
-                if now.timeIntervalSince(since) >= Self.revealDelay {
-                    hotZoneSince = nil
-                    if panel.screen != screen {
-                        panel.placeOnScreen()
-                        updateCapacity()
+            guard isRevealed else {
+                // Resting in the menu bar brings the line down on that screen.
+                // Pushing against the top edge is part of it, and it also works
+                // when another display sits above and the pointer never stops.
+                if Self.opensFromMenuBar, let screen = screenUnderPointer, inMenuBar, !menuBarSuppressed,
+                   !FullScreen.blocksLine(on: screen) {
+                    let since = hotZoneSince ?? now
+                    hotZoneSince = since
+                    if now.timeIntervalSince(since) >= Self.revealDelay {
+                        hotZoneSince = nil
+                        if panel.screen != screen {
+                            panel.placeOnScreen()
+                            updateCapacity()
+                        }
+                        refresh()
+                        reveal()
                     }
-                    refresh()
-                    reveal()
+                } else {
+                    hotZoneSince = nil
                 }
-            } else {
-                hotZoneSince = nil
+                return
             }
-            return
-        }
 
-        updateMousePassThrough(mouse)
+            updateMousePassThrough(mouse)
 
-        // The line's zone runs from its lowest point up to the top of the
-        // screen, menu bar included, so moving up never hides it.
-        var zone = panel.frame
-        if let screen = panel.screen { zone.size.height = screen.frame.maxY - zone.minY }
-        let inside = NSMouseInRect(mouse, zone, false)
-        if inside && pinned { pinned = false }
+            // The line's zone runs from its lowest point up to the top of the
+            // screen, menu bar included, so moving up never hides it.
+            var zone = panel.frame
+            if let screen = panel.screen { zone.size.height = screen.frame.maxY - zone.minY }
+            let inside = NSMouseInRect(mouse, zone, false)
+            if inside && pinned { pinned = false }
 
-        let busy = pinned || GrabView.isDragging || GrabView.isShowingMenu
-            || line.pressedID != nil || now < peekUntil
-        if inside || busy {
-            awaySince = nil
-        } else {
-            let since = awaySince ?? now
-            awaySince = since
-            if now.timeIntervalSince(since) >= Self.retractDelay {
+            let busy = pinned || GrabView.isDragging || GrabView.isShowingMenu
+                || line.pressedID != nil || now < peekUntil
+            if inside || busy {
                 awaySince = nil
-                setRevealed(false)
+            } else {
+                let since = awaySince ?? now
+                awaySince = since
+                if now.timeIntervalSince(since) >= Self.retractDelay {
+                    awaySince = nil
+                    setRevealed(false)
+                }
             }
         }
     }

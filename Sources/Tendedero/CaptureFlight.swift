@@ -147,23 +147,36 @@ final class CaptureFlight {
     }
 
     private func tick() {
-        let k = min(1, (CACurrentMediaTime() - start) / duration)
-        if falling { updateFall(k) } else { update(k) }
-        guard k >= 1 else { return }
-        timer?.invalidate()
-        timer = nil
-        completion()
-        if falling {
-            window.orderOut(nil)
-            return
+        autoreleasepool {
+            let k = min(1, (CACurrentMediaTime() - start) / duration)
+            if falling { updateFall(k) } else { update(k) }
+            guard k >= 1 else { return }
+            timer?.invalidate()
+            timer = nil
+            completion()
+            if falling {
+                window.orderOut(nil)
+                cleanup()
+                return
+            }
+            // The real card fades in underneath; this one fades out over it.
+            NSAnimationContext.runAnimationGroup({ ctx in
+                ctx.duration = 0.16
+                window.animator().alphaValue = 0
+            }, completionHandler: { [weak self, window] in
+                MainActor.assumeIsolated {
+                    window.orderOut(nil)
+                    self?.cleanup()
+                    malloc_zone_pressure_relief(nil, 0)
+                }
+            })
         }
-        // The real card fades in underneath; this one fades out over it.
-        NSAnimationContext.runAnimationGroup({ ctx in
-            ctx.duration = 0.16
-            window.animator().alphaValue = 0
-        }, completionHandler: { [window] in
-            MainActor.assumeIsolated { window.orderOut(nil) }
-        })
+    }
+
+    private func cleanup() {
+        photo.contents = nil
+        window.contentView = nil
+        malloc_zone_pressure_relief(nil, 0)
     }
 
     private func updateFall(_ raw: Double) {

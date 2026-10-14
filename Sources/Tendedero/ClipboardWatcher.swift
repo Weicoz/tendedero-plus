@@ -12,9 +12,8 @@ final class ClipboardWatcher {
     private let onImage: (URL) -> Void
     private var timer: Timer?
     private var lastCount = NSPasteboard.general.changeCount
-    /// The last image saved. Some apps put the same image on the clipboard
-    /// again; it hangs once, unless it has been taken down since.
-    private var last: (png: Data, url: URL)?
+    /// The last image saved: tracks hash and size instead of holding raw Data in memory.
+    private var last: (hash: Int, size: Int, url: URL)?
 
     private static let enabledKey = "clipboardEnabled"
 
@@ -57,25 +56,33 @@ final class ClipboardWatcher {
     func stop() {
         timer?.invalidate()
         timer = nil
+        last = nil
+        malloc_zone_pressure_relief(nil, 0)
     }
 
     private func check() {
-        let pb = NSPasteboard.general
-        let count = pb.changeCount
-        guard count != lastCount else { return }
-        lastCount = count
-        guard let items = pb.pasteboardItems, !items.isEmpty,
-              items.allSatisfy({ Self.ignoredTypes.isDisjoint(with: $0.types) }),
-              let type = pb.availableType(from: [.png, .tiff]),
-              let data = pb.data(forType: type), data.count <= Self.maxBytes,
-              pb.changeCount == count else { return }
-        // Decoding a large image takes a moment, so it happens off the main thread.
-        DispatchQueue.global(qos: .userInitiated).async { [weak self] in
-            let png = ClipboardWatcher.png(from: data, type: type)
-            DispatchQueue.main.async {
-                // Copied over again in the meantime: that copy is the one that counts.
-                guard let png, NSPasteboard.general.changeCount == count else { return }
-                self?.save(png)
+        autoreleasepool {
+            let pb = NSPasteboard.general
+            let count = pb.changeCount
+            guard count != lastCount else { return }
+            lastCount = count
+            guard let items = pb.pasteboardItems, !items.isEmpty,
+                  items.allSatisfy({ Self.ignoredTypes.isDisjoint(with: $0.types) }),
+                  let type = pb.availableType(from: [.png, .tiff]),
+                  let data = pb.data(forType: type), data.count <= Self.maxBytes,
+                  pb.changeCount == count else { return }
+            // Decoding a large image takes a moment, so it happens off the main thread.
+            DispatchQueue.global(qos: .userInitiated).async { [weak self] in
+                autoreleasepool {
+                    let png = ClipboardWatcher.png(from: data, type: type)
+                    DispatchQueue.main.async {
+                        autoreleasepool {
+                            // Copied over again in the meantime: that copy is the one that counts.
+                            guard let png, NSPasteboard.general.changeCount == count else { return }
+                            self?.save(png)
+                        }
+                    }
+                }
             }
         }
     }
@@ -90,7 +97,9 @@ final class ClipboardWatcher {
     }
 
     private func save(_ png: Data) {
-        if let last, last.png == png, FileManager.default.fileExists(atPath: last.url.path) { return }
+        let size = png.count
+        let hash = png.hashValue
+        if let last, last.size == size, last.hash == hash, FileManager.default.fileExists(atPath: last.url.path) { return }
         let fm = FileManager.default
         var url = Inbox.folder.appendingPathComponent("Clipboard \(Self.stamp()).png")
         var n = 2
@@ -103,8 +112,9 @@ final class ClipboardWatcher {
             try png.write(to: url, options: .atomic)
             // What people copy can be private: only they can read it.
             try fm.setAttributes([.posixPermissions: 0o600], ofItemAtPath: url.path)
-            last = (png, url)
+            last = (hash: hash, size: size, url: url)
             onImage(url)
+            malloc_zone_pressure_relief(nil, 0)
         } catch {
             try? fm.removeItem(at: url)
             log.error("Could not save a copied image: \(error.localizedDescription, privacy: .public)")

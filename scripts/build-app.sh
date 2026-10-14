@@ -14,14 +14,18 @@ VERSION="1.5.0"
 # newest macOS 26 SDK installed alongside it.
 build_arch() {
   local triple="$1-apple-macosx14.0"
-  if [ -z "${SDKROOT:-}" ] && ! swift build -c "$CONFIG" --triple "$triple" >&2; then
+  local extra_flags=""
+  if [ "$CONFIG" = "release" ]; then
+    extra_flags="-Xswiftc -Osize -Xswiftc -wmo"
+  fi
+  if [ -z "${SDKROOT:-}" ] && ! swift build -c "$CONFIG" --triple "$triple" $extra_flags >&2; then
     FALLBACK="$(ls -d /Library/Developer/CommandLineTools/SDKs/MacOSX26*.sdk 2>/dev/null | sort -V | tail -1)"
     if [ -z "$FALLBACK" ]; then exit 1; fi
     echo "Retrying with $FALLBACK" >&2
     export SDKROOT="$FALLBACK"
   fi
-  if [ -n "${SDKROOT:-}" ]; then swift build -c "$CONFIG" --triple "$triple" >&2; fi
-  cp "$(swift build -c "$CONFIG" --triple "$triple" --show-bin-path)/Tendedero" "$OUT/Tendedero-$1"
+  if [ -n "${SDKROOT:-}" ]; then swift build -c "$CONFIG" --triple "$triple" $extra_flags >&2; fi
+  cp "$(swift build -c "$CONFIG" --triple "$triple" $extra_flags --show-bin-path)/Tendedero" "$OUT/Tendedero-$1"
 }
 
 # A universal binary, so it runs on Apple silicon and on Intel Macs, from
