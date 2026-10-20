@@ -55,6 +55,12 @@ enum Layout {
 
 struct LineView: View {
     @ObservedObject var line: Line
+    /// Whether the line is down. The view is built as the line is called for,
+    /// so its first frame is the tucked-up one: this is what brings it into
+    /// place, and what carries it back up when the line goes away. Reading
+    /// `line.revealed` straight would draw it down already in place, and a
+    /// line that never moved would simply appear.
+    @State private var down = false
 
     var body: some View {
         GeometryReader { geo in
@@ -86,13 +92,19 @@ struct LineView: View {
             .animation(.easeInOut(duration: 0.3), value: line.items.isEmpty)
             // Tucked away, the whole line waits above the top edge and slides
             // out from under the menu bar, the way an auto-hiding Dock does.
-            .offset(y: line.revealed ? 0 : -(Layout.panelHeight + 12))
-            .animation(line.revealed ? .spring(response: 0.42, dampingFraction: 0.82)
-                                     : .easeIn(duration: 0.22), value: line.revealed)
+            .offset(y: down ? 0 : -(Layout.panelHeight + 12))
+            .animation(down ? .spring(response: 0.42, dampingFraction: 0.82)
+                            : .easeIn(duration: 0.22), value: down)
         }
         .onPreferenceChange(HitRectsKey.self) { rects in
             line.hitRects = rects
         }
+        .onAppear {
+            // A turn of the run loop later, so the first frame is drawn with
+            // the line still up and it slides down from there.
+            DispatchQueue.main.async { if line.revealed { down = true } }
+        }
+        .onChange(of: line.revealed) { _, revealed in down = revealed }
     }
 }
 

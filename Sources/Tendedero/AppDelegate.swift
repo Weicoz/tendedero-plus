@@ -9,6 +9,11 @@ import SwiftUI
 final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private let line = Line()
     private var panel: LinePanel!
+    /// The line's view, while the panel is showing it. It is let go when the
+    /// line is tucked away: a screenful of photos, the layers they are drawn
+    /// in and the pixels behind them is the biggest thing this app holds, and
+    /// nothing is looking at any of it while the line is up.
+    private var host: NSHostingView<LineView>?
     private var statusItem: NSStatusItem!
     private var watcher: ScreenshotWatcher!
     /// In inbox mode, a second watcher on the Desktop. If a macOS version
@@ -66,9 +71,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     }
 
     func applicationDidFinishLaunching(_ notification: Notification) {
-        let host = NSHostingView(rootView: LineView(line: line))
-        host.sizingOptions = []
-        panel = LinePanel(content: host)
+        panel = LinePanel(content: NSView())
         panel.placeOnScreen()
         updateCapacity()
 
@@ -333,7 +336,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     private func fall(_ item: Pegged) {
         guard isPresent, isRevealed, !item.flying, let screen = panel.screen,
               let card = cardFrame(for: item.id),
-              let image = item.thumb.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
+              let image = line.photo(item.id)?.cgImage(forProposedRect: nil, context: nil, hints: nil) else { return }
         CaptureFlight.fall(image: image, card: card, tilt: CGFloat(item.tilt), on: screen)
     }
 
@@ -346,7 +349,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
                          visible: line.visibleCount, scroll: line.scroll)
         let viewTop = Layout.ropeY(x: x, width: width) - Layout.pinAbove
         let cardTop = viewTop + PeggedView.cardOffsetBelowTop
-        let size = PeggedView.cardSize(for: line.items[index].thumb.size)
+        let size = PeggedView.cardSize(for: line.items[index].thumbSize)
         return CGRect(x: panel.frame.minX + x - size.width / 2,
                       y: panel.frame.maxY - cardTop - size.height,
                       width: size.width, height: size.height)
@@ -393,22 +396,51 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         setRevealed(true)
     }
 
+    /// Builds the line's view and hands it to the panel. The panel itself
+    /// stays: it is only a strip of screen, and it is what knows where the
+    /// line hangs.
+    private func mountLine() {
+        guard host == nil else { return }
+        let view = NSHostingView(rootView: LineView(line: line))
+        view.sizingOptions = []
+        host = view
+        panel.contentView = view
+    }
+
+    /// Lets go of the line's view and everything it draws.
+    private func unmountLine() {
+        guard host != nil else { return }
+        panel.contentView = NSView()
+        host = nil
+        // The cards are gone, so where they were is gone too: clicks over the
+        // strip pass through until the new ones report where they hang.
+        line.hitRects = [:]
+    }
+
     private func setRevealed(_ on: Bool) {
         guard on != isRevealed else { return }
         isRevealed = on
         line.revealed = on
-        // It always comes down showing the newest.
+        // It always comes down showing the newest. This comes before the
+        // photos are asked for: the ones on screen are worked out from where
+        // the line sits, and it is about to move.
         if on { line.scroll = 0 }
+        // The photos are decoded just before the line comes down, and let go
+        // once it is away again: a screenful of them is the line's biggest
+        // footprint, and nothing is looking at them while it is tucked up.
+        if on { line.loadThumbnails() }
         // Tucked away, the line leaves no window behind: an invisible strip
         // over the top of the screen would still sit above other apps for
         // anything that checks what is on top, like screen automation.
         if on {
+            mountLine()
             if isPresent { panel.orderFrontRegardless() }
         } else {
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) { [weak self] in
                 guard let self, !self.isRevealed else { return }
                 self.panel.orderOut(nil)
-                malloc_zone_pressure_relief(nil, 0)
+                self.unmountLine()
+                self.line.unloadThumbnails()
             }
         }
         if !on {

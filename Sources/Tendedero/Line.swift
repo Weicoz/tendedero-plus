@@ -1,6 +1,7 @@
 import AppKit
 import AVFoundation
 import Combine
+import ImageIO
 import os
 
 let log = Logger(subsystem: "app.tendedero.Tendedero", category: "line")
@@ -9,7 +10,12 @@ let log = Logger(subsystem: "app.tendedero.Tendedero", category: "line")
 struct Pegged: Identifiable, Equatable {
     let id = UUID()
     let url: URL
-    var thumb: NSImage
+    /// The decoded photo. Only kept while the line is in view: a screenful of
+    /// them is the line's biggest footprint, and away they are let go.
+    var thumb: NSImage?
+    /// How big the photo on the card is. Read from the file's header alone, so
+    /// the card keeps its shape with no image at hand.
+    var thumbSize: NSSize
     /// Every photo hangs a little crooked, like on a real line.
     let tilt = Double.random(in: -2.5...2.5)
     var falling = false
@@ -38,6 +44,25 @@ final class Line: ObservableObject {
     /// Card frames in window coordinates, reported by the views. The panel
     /// uses them to only catch clicks over photos and let the rest through.
     var hitRects: [UUID: CGRect] = [:]
+    /// The photos that have already dropped onto the line. The cards are
+    /// rebuilt whenever the line comes down, and a photo that is already
+    /// hanging must not fall in a second time.
+    private var arrivedIDs: Set<UUID> = []
+
+    /// Decoding a screenshot is slow enough to feel: a screenful of Retina
+    /// captures takes close to a second. The line never waits for it — the
+    /// photos are decoded off the main thread and drop onto their cards as
+    /// they arrive.
+    ///
+    /// One at a time, on purpose. Decoding a 5K capture means holding its
+    /// whole bitmap at once — some 15 MB — and eight of those at once would
+    /// grow the heap to well over a hundred megabytes that malloc then keeps.
+    /// One after another the peak is a single bitmap, and the cards fill in
+    /// just as the line settles.
+    private let decodeQueue = DispatchQueue(label: "app.tendedero.decode", qos: .userInitiated)
+    /// Bumped every time the photos are let go, so a decode still running
+    /// drops its result instead of putting a photo back after the fact.
+    private var decodeGeneration = 0
 
     var maxItems = 8
     /// How many photos fit across the screen. With Keep on line set, the
@@ -66,6 +91,25 @@ final class Line: ObservableObject {
 
     var liveCount: Int { items.filter { !$0.falling }.count }
 
+    func hasArrived(_ id: UUID) -> Bool { arrivedIDs.contains(id) }
+
+    /// The photo for a card, decoded here if it is still on its way. Dragging
+    /// one off the line and letting one fall both need pixels at once, and
+    /// both happen well after the line came down: this is the rare case of
+    /// reaching a card before its own photo has arrived.
+    func photo(_ id: UUID) -> NSImage? {
+        guard let item = items.first(where: { $0.id == id }) else { return nil }
+        return item.thumb ?? makeThumbnail(item.url)
+    }
+
+    func markArrived(_ id: UUID) {
+        arrivedIDs.insert(id)
+        // Only ever holds the photos that are on the line right now, plus a
+        // few that have just come off it. The ones still hanging are kept, or
+        // they would drop in a second time.
+        if arrivedIDs.count > 200 { arrivedIDs = Set(items.map(\.id)) }
+    }
+
     private let storeKey = "pegged"
 
     init() {
@@ -78,10 +122,10 @@ final class Line: ObservableObject {
     @discardableResult
     func hang(_ url: URL, quietly: Bool = false, flying: Bool = false) -> UUID? {
         guard !items.contains(where: { $0.url == url && !$0.falling }),
-              let thumb = makeThumbnail(url) else { return nil }
-        var item = Pegged(url: url, thumb: thumb)
+              var item = peg(url) else { return nil }
         item.flying = flying
         items.append(item)
+        if revealed, item.thumb == nil { decode(item.id, decodeGeneration) }
         scroll = 0
         // A full line lets the oldest photo fall off the far end. Only one: a
         // line hung on a wider screen keeps its length here instead of losing
@@ -218,7 +262,10 @@ final class Line: ObservableObject {
     func scroll(by delta: CGFloat) {
         let most = CGFloat(max(0, items.count - visibleCount)) * Layout.spacing
         let next = min(most, max(0, scroll + delta))
-        if next != scroll { scroll = next }
+        guard next != scroll else { return }
+        scroll = next
+        // Photos scrolled into view are decoded as they come in.
+        if revealed { loadThumbnails() }
     }
 
     /// After Keep on line is lowered, the oldest photos past it go the way
@@ -266,7 +313,7 @@ final class Line: ObservableObject {
     func markup(_ id: UUID) {
         guard let item = items.first(where: { $0.id == id }) else { return }
         if item.isRecording {
-            Trim.shared.edit(item.url, size: item.thumb.size)
+            Trim.shared.edit(item.url, size: item.thumbSize)
         } else {
             Markup.shared.edit(item.url)
         }
@@ -274,9 +321,8 @@ final class Line: ObservableObject {
 
     /// After editing, the photo on the line shows the new version.
     func reloadThumbnail(for url: URL) {
-        guard let i = items.firstIndex(where: { $0.url == url && !$0.falling }),
-              let thumb = makeThumbnail(url) else { return }
-        items[i].thumb = thumb
+        guard let item = items.first(where: { $0.url == url && !$0.falling }) else { return }
+        decode(item.id, decodeGeneration)
     }
 
     /// Quick Look on this photo, with the rest of the line a key press away.
@@ -287,9 +333,60 @@ final class Line: ObservableObject {
     }
 
     /// After a change of size, every photo is redrawn sharp at the new one.
+    /// Away from the screen only the card's size is worked out: the images
+    /// wait until the line comes down again.
     func reloadThumbnails() {
+        let generation = decodeGeneration
+        let showing = onScreen
         for i in items.indices where !items[i].falling {
-            if let thumb = makeThumbnail(items[i].url) { items[i].thumb = thumb }
+            if revealed {
+                items[i].thumb = nil
+                if showing.contains(i) { decode(items[i].id, generation) }
+            } else if let size = thumbnailSize(items[i].url) {
+                items[i].thumbSize = size
+            }
+        }
+    }
+
+    /// The cards on screen right now, with one either side of them so a
+    /// scroll has something to show while the next ones arrive. A long line
+    /// keeps the photos it is not showing off the heap.
+    private var onScreen: Range<Int> {
+        let count = items.count
+        guard count > visibleCount else { return 0..<count }
+        let step = max(0, Int((scroll / Layout.spacing).rounded(.down)))
+        let newest = count - 1 - step
+        return max(0, newest - visibleCount)..<min(count, newest + 2)
+    }
+
+    /// The line is coming down: every photo without one starts decoding. The
+    /// cards are on screen before any of them is ready, which is the point.
+    func loadThumbnails() {
+        let generation = decodeGeneration
+        for i in onScreen where items[i].thumb == nil { decode(items[i].id, generation) }
+    }
+
+    /// Tucked away, the photos are let go and their pages handed back.
+    func unloadThumbnails() {
+        decodeGeneration &+= 1
+        for i in items.indices where items[i].thumb != nil { items[i].thumb = nil }
+        malloc_zone_pressure_relief(nil, 0)
+    }
+
+    /// One photo, decoded away from the main thread and hung on its card if
+    /// the card is still there and the line is still down.
+    private func decode(_ id: UUID, _ generation: Int) {
+        guard let item = items.first(where: { $0.id == id }) else { return }
+        let url = item.url
+        decodeQueue.async { [weak self] in
+            let thumb = makeThumbnail(url)
+            DispatchQueue.main.async {
+                guard let self, generation == self.decodeGeneration, self.revealed,
+                      let thumb, let i = self.items.firstIndex(where: { $0.id == id })
+                else { return }
+                self.items[i].thumb = thumb
+                self.items[i].thumbSize = thumb.size
+            }
         }
     }
 
@@ -324,8 +421,8 @@ final class Line: ObservableObject {
         let paths = UserDefaults.standard.stringArray(forKey: storeKey) ?? []
         for path in paths where FileManager.default.fileExists(atPath: path) {
             let url = URL(fileURLWithPath: path)
-            guard !items.contains(where: { $0.url == url }), let thumb = makeThumbnail(url) else { continue }
-            items.append(Pegged(url: url, thumb: thumb))
+            guard !items.contains(where: { $0.url == url }), let item = peg(url) else { continue }
+            items.append(item)
         }
     }
 
@@ -335,6 +432,21 @@ final class Line: ObservableObject {
         guard soundOn, let sound = NSSound(named: name)?.copy() as? NSSound else { return }
         sound.volume = volume
         sound.play()
+    }
+
+    /// One photo ready for the line. A screenshot's card is sized from the
+    /// file's own header, and its pixels are decoded later, off the main
+    /// thread: a capture must not wait for its own picture to be drawn.
+    private func peg(_ url: URL) -> Pegged? {
+        // A recording has no header to read, so its first frame is decoded to
+        // find the card's shape. It is kept only if the line is down to show
+        // it; otherwise it goes straight back.
+        if isRecording(url) {
+            guard let frame = makeThumbnail(url) else { return nil }
+            return Pegged(url: url, thumb: revealed ? frame : nil, thumbSize: frame.size)
+        }
+        guard let size = thumbnailSize(url) else { return nil }
+        return Pegged(url: url, thumb: nil, thumbSize: size)
     }
 
     private func pngData(_ url: URL) -> Data? {
@@ -365,6 +477,24 @@ func makeThumbnail(_ url: URL, maxPixels: Int = Int(320 * Layout.size.scale)) ->
         guard let cg = CGImageSourceCreateThumbnailAtIndex(source, 0, options as CFDictionary) else { return nil }
         return NSImage(cgImage: cg, size: NSSize(width: cg.width, height: cg.height))
     }
+}
+
+/// How big the photo on the line is, from the file's header alone: no pixels
+/// are decoded, so a whole line of them costs nothing to know about.
+func thumbnailSize(_ url: URL, maxPixels: Int = Int(320 * Layout.size.scale)) -> NSSize? {
+    guard let source = CGImageSourceCreateWithURL(url as CFURL, nil),
+          let props = CGImageSourceCopyPropertiesAtIndex(source, 0, nil) as? [CFString: Any],
+          let pixelsWide = props[kCGImagePropertyPixelWidth] as? Int,
+          let pixelsHigh = props[kCGImagePropertyPixelHeight] as? Int,
+          pixelsWide > 0, pixelsHigh > 0 else { return nil }
+    var width = CGFloat(pixelsWide)
+    var height = CGFloat(pixelsHigh)
+    // An orientation from 5 to 8 turns the photo on its side.
+    if let orientation = props[kCGImagePropertyOrientation] as? Int, (5...8).contains(orientation) {
+        swap(&width, &height)
+    }
+    let scale = min(1, CGFloat(maxPixels) / max(width, height))
+    return NSSize(width: (width * scale).rounded(), height: (height * scale).rounded())
 }
 
 /// A recording shows its first frame.

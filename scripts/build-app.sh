@@ -78,6 +78,13 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>LSMinimumSystemVersion</key><string>14.0</string>
   <key>LSUIElement</key><true/>
   <key>NSHighResolutionCapable</key><true/>
+  <!-- The line is a small thing to keep in memory: malloc keeps its small
+       allocations in fewer, fuller pages instead of many half-empty ones. -->
+  <key>LSEnvironment</key>
+  <dict>
+    <key>MallocSpaceEfficient</key>
+    <string>1</string>
+  </dict>
   <key>NSDesktopFolderUsageDescription</key>
   <string>Tendedero watches the folder where macOS saves your screenshots so it can hang them on the line.</string>
   <key>NSDocumentsFolderUsageDescription</key>

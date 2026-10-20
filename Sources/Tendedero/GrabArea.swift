@@ -30,6 +30,7 @@ struct GrabArea: NSViewRepresentable {
         let isRecording = item.isRecording
         view.url = item.url
         view.dragImage = item.thumb
+        view.imageProvider = { line.photo(id) }
         view.onClick = { line.copy(id) }
         view.onDoubleClick = { line.open(id) }
         view.onDragStart = { line.draggingID = id }
@@ -83,6 +84,8 @@ final class GrabView: NSView, NSDraggingSource {
 
     var url: URL?
     var dragImage: NSImage?
+    /// Asked for the photo only when a drag starts without one in hand.
+    var imageProvider: () -> NSImage? = { nil }
     var onClick: () -> Void = {}
     var onDoubleClick: () -> Void = {}
     var onDragStart: () -> Void = {}
@@ -164,8 +167,11 @@ final class GrabView: NSView, NSDraggingSource {
         startedDrag = true
         endPress()
 
+        // The photo may still be on its way down if the line has only just
+        // come down. A drag needs its pixels now.
+        let image = dragImage ?? imageProvider()
         let item = NSDraggingItem(pasteboardWriter: url as NSURL)
-        item.setDraggingFrame(imageFrame(), contents: dragImage)
+        item.setDraggingFrame(imageFrame(of: image), contents: image)
         let session = beginDraggingSession(with: [item], event: event, source: self)
         // Released where nothing accepts it: it flies back to the line.
         session.animatesToStartingPositionsOnCancelOrFail = true
@@ -217,8 +223,8 @@ final class GrabView: NSView, NSDraggingSource {
     }
 
     /// The drag preview keeps the photo's aspect ratio inside the card.
-    private func imageFrame() -> NSRect {
-        guard let size = dragImage?.size, size.width > 0, size.height > 0 else { return bounds }
+    private func imageFrame(of image: NSImage?) -> NSRect {
+        guard let size = image?.size, size.width > 0, size.height > 0 else { return bounds }
         let scale = min(bounds.width / size.width, bounds.height / size.height)
         let w = size.width * scale, h = size.height * scale
         return NSRect(x: (bounds.width - w) / 2, y: (bounds.height - h) / 2, width: w, height: h)

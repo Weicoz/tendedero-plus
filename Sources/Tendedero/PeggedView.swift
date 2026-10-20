@@ -15,6 +15,9 @@ struct PeggedView: View {
     private var pressed: Bool { line.pressedID == item.id }
 
     var body: some View {
+        // There is nothing to hold back here: the line's view is built when
+        // the line comes down and let go when it tucks away, so a card that is
+        // drawn at all is a card on screen.
         VStack(spacing: -12) {
             Clothespin()
                 .zIndex(1)
@@ -51,13 +54,25 @@ struct PeggedView: View {
     /// Distance from the top of the hanging view (the clip) to the card.
     static let cardOffsetBelowTop: CGFloat = 26 - 12
 
-    private var photoSize: CGSize { Self.photoSize(for: item.thumb.size) }
+    private var photoSize: CGSize { Self.photoSize(for: item.thumbSize) }
+
+    /// The photo itself. While the line is away the decoded image has been let
+    /// go, and the card is simply empty: it is off screen either way.
+    private var photo: some View {
+        Group {
+            if let thumb = item.thumb {
+                Image(nsImage: thumb)
+                    .resizable()
+                    .interpolation(.high)
+            } else {
+                Color.clear
+            }
+        }
+        .frame(width: photoSize.width, height: photoSize.height)
+    }
 
     private var card: some View {
-        Image(nsImage: item.thumb)
-            .resizable()
-            .interpolation(.high)
-            .frame(width: photoSize.width, height: photoSize.height)
+        photo
             // Concentric corners: the photo's radius is the frame's minus the
             // inset, the way macOS rounds nested shapes.
             .clipShape(RoundedRectangle(cornerRadius: Frame.radius - Frame.inset, style: .continuous))
@@ -123,11 +138,14 @@ struct PeggedView: View {
     }
 
     private func arrive() {
-        // A capture that flew in is already in place; the flight did the arriving.
-        if item.flying {
+        // A capture that flew in is already in place; the flight did the
+        // arriving. One that was already hanging is in place too, and only
+        // its card was rebuilt.
+        if item.flying || line.hasArrived(item.id) {
             arrived = true
             return
         }
+        line.markArrived(item.id)
         swing = 16
         withAnimation(.spring(response: 0.42, dampingFraction: 0.72)) { arrived = true }
         withAnimation(.interpolatingSpring(stiffness: 46, damping: 2.6)) { swing = 0 }
