@@ -1,8 +1,8 @@
 /* Galician. */
 
 /* AppDelegate */
-"Let Tendedero handle your screenshots?" = "Queres que Tendedero se encargue das túas capturas?";
-"Screenshots will hang on the line the instant you take them, without the floating thumbnail, and will not pile up on your Desktop. Drag one to a folder to keep it, or discard it with the cross. You can turn this off from the menu bar, and your settings come back when Tendedero quits." = "As capturas penduraranse na corda no intre en que as fagas, sen a miniatura flotante, e non se amontoarán no Escritorio. Arrastra unha a un cartafol para gardala, ou descártaa coa cruz. Podes desactivalo dende a barra de menús, e os teus axustes volven ser os de antes ao saír de Tendedero.";
+"Let Tendedero Plus handle your screenshots?" = "Queres que Tendedero Plus se encargue das túas capturas?";
+"Screenshots will hang on the line the instant you take them, without the floating thumbnail, and will not pile up on your Desktop. Drag one to a folder to keep it, or discard it with the cross. You can turn this off from the menu bar, and your settings come back when Tendedero Plus quits." = "As capturas penduraranse na corda no intre en que as fagas, sen a miniatura flotante, e non se amontoarán no Escritorio. Arrastra unha a un cartafol para gardala, ou descártaa coa cruz. Podes desactivalo dende a barra de menús, e os teus axustes volven ser os de antes ao saír de Tendedero Plus.";
 "Turn on" = "Activar";
 "Not now" = "Agora non";
 "Hide line" = "Ocultar a corda";
@@ -16,7 +16,7 @@
 "Check for Updates…" = "Buscar actualizacións…";
 "Quit Tendedero Plus" = "Saír de Tendedero Plus";
 "Could not change the login setting" = "Non se puido cambiar o inicio de sesión";
-"Move Tendedero to the Applications folder and try again." = "Move Tendedero ao cartafol Aplicacións e téntao de novo.";
+"Move Tendedero Plus to the Applications folder and try again." = "Move Tendedero Plus ao cartafol Aplicacións e téntao de novo.";
 "Keep on line" = "Gardar na corda";
 "As many as fit" = "As que caiban";
 "%d photos" = "%d fotos";
@@ -42,7 +42,7 @@
 "Over full screen apps" = "Sobre apps a pantalla completa";
 "Hang copied images" = "Pendurar imaxes copiadas";
 "Images you copy hang on the line too" = "As imaxes que copias tamén se penduran";
-"Tendedero, hanging copied images" = "Tendedero, pendurando imaxes copiadas";
+"Tendedero Plus, hanging copied images" = "Tendedero Plus, pendurando imaxes copiadas";
 
 /* GrabArea */
 "Copy" = "Copiar";
