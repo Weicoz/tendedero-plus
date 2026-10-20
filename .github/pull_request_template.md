@@ -9,5 +9,5 @@
 <!--
 Before opening:
 - One change per pull request. Small ones get reviewed and merged sooner.
-- New text in the app goes in Sources/Tendedero/Resources/<language>.lproj. Run `swift scripts/check-strings.swift`.
+- New text in the app goes in Sources/TendederoPlus/Resources/<language>.lproj. Run `swift scripts/check-strings.swift`.
 -->

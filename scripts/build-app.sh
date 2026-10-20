@@ -1,12 +1,12 @@
 #!/bin/bash
-# Builds Tendedero.app into ./build without needing Xcode.
+# Builds Tendedero Plus.app into ./build without needing Xcode.
 # Usage: scripts/build-app.sh [debug|release]
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
 CONFIG="${1:-release}"
 APP="build/Tendedero Plus.app"
-VERSION="1.5.0-plus"
+VERSION="1.5.1-plus"
 
 # Builds one architecture and prints the binary's path.
 # The Command Line Tools for macOS 27 ship an SDK whose SwiftUI needs a macro
@@ -25,7 +25,7 @@ build_arch() {
     export SDKROOT="$FALLBACK"
   fi
   if [ -n "${SDKROOT:-}" ]; then swift build -c "$CONFIG" --triple "$triple" $extra_flags >&2; fi
-  cp "$(swift build -c "$CONFIG" --triple "$triple" $extra_flags --show-bin-path)/Tendedero" "$OUT/Tendedero-$1"
+  cp "$(swift build -c "$CONFIG" --triple "$triple" $extra_flags --show-bin-path)/TendederoPlus" "$OUT/TendederoPlus-$1"
 }
 
 # A universal binary, so it runs on Apple silicon and on Intel Macs, from
@@ -33,12 +33,12 @@ build_arch() {
 OUT="$(mktemp -d)"
 build_arch arm64
 build_arch x86_64
-lipo -create "$OUT/Tendedero-arm64" "$OUT/Tendedero-x86_64" -output "$OUT/Tendedero"
-BIN="$OUT/Tendedero"
+lipo -create "$OUT/TendederoPlus-arm64" "$OUT/TendederoPlus-x86_64" -output "$OUT/TendederoPlus"
+BIN="$OUT/TendederoPlus"
 
 rm -rf "$APP"
 mkdir -p "$APP/Contents/MacOS" "$APP/Contents/Resources"
-cp "$BIN" "$APP/Contents/MacOS/Tendedero"
+cp "$BIN" "$APP/Contents/MacOS/TendederoPlus"
 
 # Icon
 WORK="$(mktemp -d)"
@@ -55,7 +55,7 @@ rm -rf "$WORK"
 # Translations: one folder per language, listed in Info.plist so macOS knows
 # which languages the app speaks.
 LANGUAGES=""
-for dir in Sources/Tendedero/Resources/*.lproj; do
+for dir in Sources/TendederoPlus/Resources/*.lproj; do
   cp -R "$dir" "$APP/Contents/Resources/"
   LANGUAGES="$LANGUAGES<string>$(basename "$dir" .lproj)</string>"
 done
@@ -68,11 +68,11 @@ cat > "$APP/Contents/Info.plist" <<PLIST
   <key>CFBundleName</key><string>Tendedero Plus</string>
   <key>CFBundleDisplayName</key><string>Tendedero Plus</string>
   <key>CFBundleIdentifier</key><string>app.tendedero.Tendedero</string>
-  <key>CFBundleExecutable</key><string>Tendedero</string>
+  <key>CFBundleExecutable</key><string>TendederoPlus</string>
   <key>CFBundleIconFile</key><string>Tendedero</string>
   <key>CFBundlePackageType</key><string>APPL</string>
   <key>CFBundleShortVersionString</key><string>${VERSION}</string>
-  <key>CFBundleVersion</key><string>6</string>
+  <key>CFBundleVersion</key><string>7</string>
   <key>CFBundleDevelopmentRegion</key><string>en</string>
   <key>CFBundleLocalizations</key><array>${LANGUAGES}</array>
   <key>LSMinimumSystemVersion</key><string>14.0</string>
@@ -86,11 +86,11 @@ cat > "$APP/Contents/Info.plist" <<PLIST
     <string>1</string>
   </dict>
   <key>NSDesktopFolderUsageDescription</key>
-  <string>Tendedero watches the folder where macOS saves your screenshots so it can hang them on the line.</string>
+  <string>Tendedero Plus watches the folder where macOS saves your screenshots so it can hang them on the line.</string>
   <key>NSDocumentsFolderUsageDescription</key>
-  <string>Tendedero watches the folder you chose so it can hang new images on the line.</string>
+  <string>Tendedero Plus watches the folder you chose so it can hang new images on the line.</string>
   <key>NSDownloadsFolderUsageDescription</key>
-  <string>Tendedero watches the folder you chose so it can hang new images on the line.</string>
+  <string>Tendedero Plus watches the folder you chose so it can hang new images on the line.</string>
 </dict>
 </plist>
 PLIST

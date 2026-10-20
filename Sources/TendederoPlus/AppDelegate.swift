@@ -687,7 +687,8 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     func menuNeedsUpdate(_ menu: NSMenu) {
         menu.removeAllItems()
 
-        let brandItem = NSMenuItem(title: "Tendedero Plus (v1.5.0-plus)", action: nil, keyEquivalent: "")
+        let brandVersion = Bundle.main.object(forInfoDictionaryKey: "CFBundleShortVersionString") as? String ?? "dev"
+        let brandItem = NSMenuItem(title: "Tendedero Plus (v\(brandVersion))", action: nil, keyEquivalent: "")
         brandItem.isEnabled = false
         menu.addItem(brandItem)
         menu.addItem(.separator())

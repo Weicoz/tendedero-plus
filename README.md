@@ -8,7 +8,8 @@
 <p align="center">
   <b>Tendedero Plus — Extreme Memory Optimization Edition</b>
   <br>
-  Optimized for ultra-low memory footprint: ~21MB resident footprint (down ~50% from original ~42MB).
+  Optimized for ultra-low memory footprint: 11 MB resident with an empty line, 19 MB with eight screenshots on it
+  (down from 15 MB / 24 MB in the previous build).
   <br>
   Free and open source. For macOS 14 and later.
   <br>
@@ -31,8 +32,9 @@
 4. **主动内存紧缩与系统压力响应**：面板收起、丢弃截图及应用空闲时主动触发 `malloc_zone_pressure_relief` 回收堆空闲页，并注册 `DispatchSourceMemoryPressure` 响应系统内存压力。
 5. **动画高清位图即时解绑**：截图飞行动画（1500px 高清图）结束后立即置空 CALayer 内容与全屏窗口。
 6. **编译体积与元数据压缩**：构建脚本追加 `-Xswiftc -Osize -Xswiftc -wmo`，缩减 Swift 运行时类型元数据开销。
+7. **照片按需解码与视图按需挂载**：缩略图只在拉线时按视口范围解码，收线 0.3 秒后释放；面板视图改为拉线才挂载，并在 Info.plist 注入 `MallocSpaceEfficient=1`。
 
-**实测效果**：常驻物理内存占用 (Physical Footprint) 从 **42.6 MB 降至 21 MB ~ 25 MB**（降幅达 **40% ~ 50%**），堆脏页占用从 24 MB 减至 11 MB。
+**实测效果**：常驻物理内存占用 (Physical Footprint) 空载 **11 MB**、挂 8 张真实尺寸截图 **19 MB**；同条件上一版为 15 MB / 24 MB。测量口径：arm64 原生进程的 `footprint` `64-bit Footprint` 值，MallocSpaceEfficient 开启，线收起稳态。
 
 ---
 
@@ -128,7 +130,7 @@ Tendedero runs entirely on your Mac, and your screenshots never leave it.
 ## Install
 
 Download the disk image from the [latest release](../../releases/latest),
-open it and drag Tendedero to Applications. Or install it with Homebrew:
+open it and drag Tendedero Plus to Applications. Or install it with Homebrew:
 
 ```sh
 brew install --cask alejandrobujan/tap/tendedero
@@ -142,10 +144,10 @@ like any other app.
 ## Build from source
 
 ```sh
-git clone git@github.com:alejandrobujan/tendedero.git
-cd tendedero
+git clone https://github.com/Weicoz/tendedero-plus.git
+cd tendedero-plus
 scripts/build-app.sh
-open build/Tendedero.app
+open "build/Tendedero Plus.app"
 ```
 
 Requires the Swift toolchain. Xcode is optional. With the Command Line Tools for macOS 27, the script falls back to the macOS 26 SDK they install alongside, because the new SDK needs a SwiftUI macro plugin only Xcode includes. Local builds are signed ad hoc,
@@ -174,7 +176,7 @@ Every image here, the icon included, is drawn in code by
 `scripts/make-icon.swift` and `scripts/make-readme-art.swift`.
 `scripts/make-dmg.sh` builds the disk image for releases.
 
-Translations live in `Sources/Tendedero/Resources`, one `.lproj` folder per
+Translations live in `Sources/TendederoPlus/Resources`, one `.lproj` folder per
 language. `swift scripts/check-strings.swift` checks that none is missing.
 
 </details>

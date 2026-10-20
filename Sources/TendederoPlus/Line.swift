@@ -22,7 +22,7 @@ struct Pegged: Identifiable, Equatable {
     /// Still flying in from where it was captured; the card waits hidden.
     var flying = false
     /// A screen recording rather than a screenshot.
-    var isRecording: Bool { Tendedero.isRecording(url) }
+    var isRecording: Bool { TendederoPlus.isRecording(url) }
 
     static func == (a: Pegged, b: Pegged) -> Bool {
         a.id == b.id && a.falling == b.falling && a.flying == b.flying && a.thumb === b.thumb
