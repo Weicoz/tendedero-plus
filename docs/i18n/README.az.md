@@ -106,6 +106,7 @@ Göstəricini menyu panelində saxlayın, ip aşağı enir. Uzaqlaşdırın, yox
 | Basıb saxlamaq | Markup-da açır. |
 | İki dəfə klik | Preview-da açır. |
 | Güclü klik | Quick Look ilə tez baxış. |
+| Göstəricini şəklin üstündə saxlayıb <kbd>Space</kbd> basmaq | Həmin şəkli Quick Look ilə böyüdür. |
 | Proqrama sürükləmək | Surətini göndərir. Şəkil ipdə qalır. |
 | Qovluğa sürükləmək | Orada saxlanır və ipdən çıxır. |
 | Zibil qutusuna sürükləmək və ya çarpaza klik | Ondan qurtulursunuz. |

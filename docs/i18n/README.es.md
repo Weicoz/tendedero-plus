@@ -106,6 +106,7 @@ Lleva el puntero a la barra de menús y la cuerda baja. Apártalo y desaparece.
 | Mantener pulsado | La abre en Marcación. |
 | Doble clic | La abre en Vista Previa. |
 | Clic fuerte | Le echa un vistazo con Vista Rápida. |
+| Dejar el puntero sobre una foto y pulsar <kbd>Espacio</kbd> | Amplía esa foto con Vista Rápida. |
 | Arrastrar a una app | Envía una copia, y la captura sigue colgada. |
 | Arrastrar a una carpeta | Se queda ahí y sale de la cuerda. |
 | Arrastrar a la Papelera o hacer clic en la cruz | Te deshaces de ella. |

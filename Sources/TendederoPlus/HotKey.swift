@@ -2,33 +2,51 @@ import AppKit
 import Carbon
 
 /// A single global shortcut through the Carbon hot key API. Unlike a global
-/// key monitor, it needs no Accessibility permission.
+/// key monitor, it needs no Accessibility permission. Several can be held at
+/// once: the line's own shortcut, and the Space that belongs to a photo the
+/// pointer rests on.
 final class HotKey {
     private var ref: EventHotKeyRef?
-    private static var action: (() -> Void)?
+    /// Which key this is, so the one handler knows whose action to run.
+    private let id: UInt32
+    private static var actions: [UInt32: () -> Void] = [:]
+    private static var nextID: UInt32 = 1
     private static var handlerInstalled = false
 
     /// Nil when the combination cannot be registered, for example because
     /// another app already took it.
     init?(_ shortcut: Shortcut, action: @escaping () -> Void) {
-        HotKey.action = action
-        // One handler for the app, however many times the shortcut changes.
+        let id = HotKey.nextID
+        HotKey.nextID += 1
+        self.id = id
+        HotKey.actions[id] = action
+        // One handler for the app, however many keys come and go.
         if !HotKey.handlerInstalled {
             var spec = EventTypeSpec(eventClass: OSType(kEventClassKeyboard), eventKind: UInt32(kEventHotKeyPressed))
-            InstallEventHandler(GetApplicationEventTarget(), { _, _, _ in
-                DispatchQueue.main.async { HotKey.action?() }
+            InstallEventHandler(GetApplicationEventTarget(), { _, event, _ in
+                var pressed = EventHotKeyID()
+                guard let event,
+                      GetEventParameter(event, EventParamName(kEventParamDirectObject),
+                                        EventParamType(typeEventHotKeyID), nil,
+                                        MemoryLayout<EventHotKeyID>.size, nil, &pressed) == noErr
+                else { return noErr }
+                DispatchQueue.main.async { HotKey.actions[pressed.id]?() }
                 return noErr
             }, 1, &spec, nil, nil)
             HotKey.handlerInstalled = true
         }
-        let id = EventHotKeyID(signature: OSType(0x5445_4E44), id: 1) // "TEND"
-        let status = RegisterEventHotKey(UInt32(shortcut.keyCode), UInt32(shortcut.carbonModifiers), id,
+        let hotKeyID = EventHotKeyID(signature: OSType(0x5445_4E44), id: id) // "TEND"
+        let status = RegisterEventHotKey(UInt32(shortcut.keyCode), UInt32(shortcut.carbonModifiers), hotKeyID,
                                          GetApplicationEventTarget(), 0, &ref)
-        guard status == noErr, ref != nil else { return nil }
+        guard status == noErr, ref != nil else {
+            HotKey.actions[id] = nil
+            return nil
+        }
     }
 
     deinit {
         if let ref { UnregisterEventHotKey(ref) }
+        HotKey.actions[id] = nil
     }
 }
 

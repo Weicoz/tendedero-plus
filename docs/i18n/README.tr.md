@@ -106,6 +106,7 @@ Aldığınız her ekran görüntüsü, ekranınızın hemen üstündeki bir ipe 
 | Basılı tut | İşaretle'de açar. |
 | Çift tıkla | Önizleme'de açar. |
 | Kuvvetli tıkla | Hızlı Bakış ile önizler. |
+| İşaretçiyi fotoğrafın üzerinde tutup <kbd>Boşluk</kbd> tuşuna bas | O fotoğrafı Hızlı Bakış ile büyütür. |
 | Uygulamaya sürükle | Bir kopya gönderir. İpte kalmaya devam eder. |
 | Klasöre sürükle | Orada saklar. İpten ayrılır. |
 | Çöp Kutusu'na sürükle ya da çarpıya tıkla | Siler. |

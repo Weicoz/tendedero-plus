@@ -106,6 +106,7 @@ Posez le pointeur dans la barre des menus et la corde descend. Éloignez-le et e
 | Clic maintenu | L’ouvre dans Annotation. |
 | Double-clic | L’ouvre dans Aperçu. |
 | Clic forcé | Un Coup d’œil rapide. |
+| Poser le pointeur sur une photo et appuyer sur <kbd>Espace</kbd> | Agrandit cette photo dans Coup d’œil. |
 | Glisser dans une app | Envoie une copie. Elle reste sur la corde. |
 | Glisser dans un dossier | Elle y reste. Elle quitte la corde. |
 | Glisser dans la corbeille, ou cliquer sur la croix | Laissez-la filer. |

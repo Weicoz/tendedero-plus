@@ -106,6 +106,7 @@ Pare o ponteiro na barra de menus e o varal desce. Afaste-o e ele some.
 | Clicar e segurar | Abre na Marcação. |
 | Clicar duas vezes | Abre no Pré-Visualização. |
 | Clique forte | Abre na Visualização Rápida. |
+| Parar o ponteiro sobre uma foto e pressionar <kbd>Espaço</kbd> | Amplia essa foto na Visualização Rápida. |
 | Arrastar para um app | Envia uma cópia. Ela continua no varal. |
 | Arrastar para uma pasta | Guarda a imagem ali. Ela sai do varal. |
 | Arrastar para o Lixo, ou clicar no X | Desapegue. |

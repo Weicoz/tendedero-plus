@@ -447,6 +447,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
             pinned = false
             peekUntil = .distantPast
             panel.ignoresMouseEvents = true
+            setHovered(nil)
         }
         updateMouseTimerRate()
     }
@@ -495,6 +496,7 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
         mouseTimer?.invalidate()
         mouseTimer = nil
         panel.ignoresMouseEvents = true
+        setHovered(nil)
     }
 
     /// How long the cursor rests against the top edge before the line comes
@@ -595,18 +597,79 @@ final class AppDelegate: NSObject, NSApplicationDelegate, NSMenuDelegate {
     /// mouse while the cursor is over a photo. Everywhere else, clicks go to
     /// whatever is underneath.
     private func updateMousePassThrough(_ mouse: NSPoint) {
-        guard !GrabView.isDragging else { return }
+        guard !GrabView.isDragging else {
+            setHovered(nil)
+            return
+        }
         let local = panel.convertPoint(fromScreen: mouse)
         let flipped = CGPoint(x: local.x, y: panel.frame.height - local.y)
-        var overPhoto = line.hitRects.values.contains { $0.insetBy(dx: -4, dy: -4).contains(flipped) }
+        let photo = photoUnder(flipped)
+        var overPhoto = photo != nil
         // A line longer than the screen also takes the band the photos hang
         // in, gaps included, so a swipe anywhere along it moves it.
         if !overPhoto, line.items.count > line.visibleCount, Line.keepOnLine != nil {
             let band = line.hitRects.values.reduce(CGRect.null) { $0.union($1) }
             overPhoto = !band.isNull && flipped.y >= band.minY - 4 && flipped.y <= band.maxY + 4
         }
+        setHovered(photo)
         if panel.ignoresMouseEvents == overPhoto {
             panel.ignoresMouseEvents = !overPhoto
+        }
+    }
+
+    /// Which photo the pointer is over, in the panel's own coordinates. The
+    /// one whose middle it is nearest to wins, so two cards that overlap as
+    /// one swings never fight over the key.
+    private func photoUnder(_ point: CGPoint) -> UUID? {
+        var best: (id: UUID, distance: CGFloat)?
+        for (id, rect) in line.hitRects where rect.insetBy(dx: -4, dy: -4).contains(point) {
+            let distance = hypot(rect.midX - point.x, rect.midY - point.y)
+            if best == nil || distance < best!.distance { best = (id, distance) }
+        }
+        return best?.id
+    }
+
+    // MARK: Space over a photo
+
+    /// The photo the pointer rests on, if any: the key below belongs to it.
+    private var hoveredID: UUID?
+    /// Space, caught while the pointer rests on a photo. The line never takes
+    /// the keyboard from the app you are in, so the key has to be caught
+    /// system wide: it is held for as long as the pointer is on a photo and
+    /// let go the moment it leaves, and Space stays the app's everywhere else.
+    private var previewKey: HotKey?
+    /// Another app has plain Space already. The preview keeps to the force
+    /// click and the menu.
+    private var previewKeyTaken = false
+
+    /// Space over a photo: the same Quick Look the force click opens, with
+    /// the rest of the line a key press away.
+    private func preview() {
+        guard let id = hoveredID else { return }
+        // Let Space go before the panel takes the keyboard: from here on it is
+        // the panel's, to close itself with.
+        previewKey = nil
+        log.notice("Quick Look opened with Space over a photo")
+        line.quickLook(id)
+    }
+
+    /// Takes Space while the pointer rests on a photo and gives it back when
+    /// it leaves. While Quick Look is up the key is the panel's, so it is not
+    /// taken then: it is what closes it.
+    private func setHovered(_ id: UUID?) {
+        hoveredID = id
+        let wanted = id != nil && !QuickLook.shared.isOpen
+        guard wanted != (previewKey != nil) else { return }
+        if wanted, !previewKeyTaken {
+            previewKey = HotKey(Shortcut(keyCode: kVK_Space, modifiers: [], key: " ")) { [weak self] in
+                self?.preview()
+            }
+            if previewKey == nil {
+                previewKeyTaken = true
+                log.notice("Plain Space is taken by another app: Quick Look stays on the force click")
+            }
+        } else {
+            previewKey = nil
         }
     }
 

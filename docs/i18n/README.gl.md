@@ -106,6 +106,7 @@ Leva o punteiro á barra de menús e a corda baixa. Apártao e desaparece.
 | Manter premido | Ábrea en Marcación. |
 | Dobre clic | Ábrea en Vista Previa. |
 | Clic forte | Bótalle unha ollada con Vista Rápida. |
+| Deixar o punteiro sobre unha foto e premer <kbd>Espazo</kbd> | Amplía esa foto con Vista Rápida. |
 | Arrastrar a unha app | Envía unha copia, e a captura segue pendurada. |
 | Arrastrar a un cartafol | Queda alí e sae da corda. |
 | Arrastrar á Papeleira ou facer clic na cruz | Desfaste dela. |
