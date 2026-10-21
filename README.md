@@ -8,8 +8,10 @@
 <p align="center">
   <b>Tendedero Plus — Extreme Memory Optimization Edition</b>
   <br>
-  Optimized for ultra-low memory footprint: 11 MB resident with an empty line, 19 MB with eight screenshots on it
-  (down from 15 MB / 24 MB in the previous build).
+  Optimized for ultra-low memory footprint: 12 MB resident with an empty line, 19 MB with eight screenshots on it
+  (official build: 16 MB / 27 MB). Numbers are for the current source build; the released image is older.
+  <br>
+  <a href="#vs-upstream">What is different from upstream&nbsp;&rsaquo;</a>
   <br>
   Free and open source. For macOS 14 and later.
   <br>
@@ -22,19 +24,54 @@
 
 ---
 
-### ✨ Tendedero Plus 优化特性 (Extreme Memory Optimization)
+<a id="vs-upstream"></a>
 
-> 本分支为针对常驻内存极致优化的 **Plus 版本**，解决原版在后台守护运行时的内存占用与 CPU 轮询问题：
+### ✨ 相对官方原版的优化 (What is different from upstream)
 
-1. **剪贴板零大图驻留**：移除上一张图片的原始未压缩 `Data` 长期常驻，改用轻量 Hash 与 Size 元数据校验，彻底根除复制高清图时数兆到数十兆的隐式驻留。
-2. **自适应事件轮询降频**：晾衣绳隐藏态由 30 FPS 降为 10 FPS，降低 67% CPU 唤醒与 RunLoop 临时对象分配；展开态平滑恢复 30 FPS。
-3. **屏幕对象持久缓存**：缓存屏幕信息，杜绝每次轮询调用 `NSScreen.screens` 产生的底层数组桥接拷贝。
-4. **主动内存紧缩与系统压力响应**：面板收起、丢弃截图及应用空闲时主动触发 `malloc_zone_pressure_relief` 回收堆空闲页，并注册 `DispatchSourceMemoryPressure` 响应系统内存压力。
-5. **动画高清位图即时解绑**：截图飞行动画（1500px 高清图）结束后立即置空 CALayer 内容与全屏窗口。
-6. **编译体积与元数据压缩**：构建脚本追加 `-Xswiftc -Osize -Xswiftc -wmo`，缩减 Swift 运行时类型元数据开销。
-7. **照片按需解码与视图按需挂载**：缩略图只在拉线时按视口范围解码，收线 0.3 秒后释放；面板视图改为拉线才挂载，并在 Info.plist 注入 `MallocSpaceEfficient=1`。
+> 本仓库是官方 [alejandrobujan/tendedero](https://github.com/alejandrobujan/tendedero)（下称**官方原版**）的 fork，基线为官方 v1.5.0。
+> 功能与交互与官方一致，改动集中在三处：**常驻内存**、**命名标识**、**打包脚本**。
 
-**实测效果**：常驻物理内存占用 (Physical Footprint) 空载 **11 MB**、挂 8 张真实尺寸截图 **19 MB**；同条件上一版为 15 MB / 24 MB。测量口径：arm64 原生进程的 `footprint` `64-bit Footprint` 值，MallocSpaceEfficient 开启，线收起稳态。
+#### 1. 常驻内存（主要改动）
+
+| 线收起稳态 | 官方原版 1.5.0 | Plus 已发布版 v1.5.0-plus | Plus 当前源码 1.5.2-plus |
+|:--|--:|--:|--:|
+| 空晾衣绳 | 16 MB | 16 MB | **12 MB** |
+| 挂 8 张真实尺寸截图 | 27 MB | 28 MB | **19 MB** |
+
+测量口径：同一台机器、均为 arm64 release 构建；官方按官方脚本参数，Plus 按本项目脚本参数。取系统 `footprint` 的 `64-bit Footprint` 值，指针离开菜单栏、线收起稳态；每档 3 轮 × 3 次读数取中位数（官方 16–17 / 24–28 MB，已发布 Plus 16–17 / 26–30 MB，当前源码 11–12 / 19 MB）。
+
+> **版本提示**：截至 2026-10-21，GitHub 已发布的 DMG 是 **v1.5.0-plus (build 6)**，不含 `MallocSpaceEfficient` 与照片按需解码，所以它的内存与官方原版相当（上表第 2 列）。第 3 列是当前源码 `scripts/build-app.sh` 的构建结果，也就是下一版会发布的内容。
+
+#### 2. 官方原版没有的内存与 CPU 优化
+
+1. **剪贴板大图零常驻**：官方持有上一张复制图片的原始 `Data`；Plus 只留 Hash 与 Size 元数据判重（`ClipboardWatcher.swift`），复制高清图不再产生数兆级隐式驻留。
+2. **照片按需解码**：官方在启动恢复时把每张照片解码成缩略图并常驻（`Line.swift` 的 `restore()` 逐张 `makeThumbnail`）；Plus 只在拉线时解码屏幕内及相邻两侧的卡片。
+3. **收线即释放像素**：线收起 0.3 秒后清空全部缩略图并调用 `malloc_zone_pressure_relief`（`Line.swift` 的 `unloadThumbnails()`）。
+4. **卡片尺寸只读文件头**：新增 `thumbnailSize()` 只读 `CGImageSource` 属性，卡片无需像素即可成形（`Line.swift`）。
+5. **面板视图按需挂载**：`NSHostingView` 只在拉线时挂载、收线后卸载，图层树不常驻（`AppDelegate.swift`）。
+6. **自适应轮询降频**：隐藏态 30 → 10 FPS，展开态恢复 30 FPS（`AppDelegate.swift` 的 `updateMouseTimerRate()`）。
+7. **屏幕对象持久缓存**：缓存屏幕信息，避免每次轮询调用 `NSScreen.screens` 的数组桥接拷贝。
+8. **主动内存紧缩与系统压力响应**：面板收起、丢弃截图、空闲时调用 `malloc_zone_pressure_relief`，并注册 `DispatchSourceMemoryPressure`（`AppDelegate.swift`）。
+9. **动画高清位图即时解绑**：飞落动画用的大图结束后立即置空 `CALayer.contents`（`CaptureFlight.swift`）。
+10. **编译参数**：追加 `-Xswiftc -Osize -Xswiftc -wmo`（`scripts/build-app.sh`）。
+
+#### 3. 命名、文案与打包（不影响功能）
+
+| 项目 | 官方原版 | Tendedero Plus |
+|:--|:--|:--|
+| 应用名 | `Tendedero` | `Tendedero Plus` |
+| 可执行文件 | `Tendedero` | `TendederoPlus` |
+| 版本号 | `1.5.0` (build 6) | `1.5.2-plus` (build 8) |
+| Bundle ID | `app.tendedero.Tendedero` | 未改，同左：可直接覆盖安装官方版，不会出现两个 App，设置不丢 |
+| 菜单栏 | `Tendedero`、`Quit Tendedero` | tooltip 与菜单顶部品牌项 `Tendedero Plus (v1.5.2-plus)`、`Quit Tendedero Plus`，10 种语言同步 |
+| 面板 | 无 | 右上 `TENDEDERO PLUS` 徽标；空线提示带 `PLUS` 胶囊 |
+| 打包产物 | `build/Tendedero.app`、`Tendedero-<版本>.dmg` | `build/Tendedero Plus.app`、`Tendedero-Plus-<版本>.dmg`，卷名 `Tendedero Plus` |
+
+#### 4. 与官方保持一致
+
+- 功能、手势、快捷键、10 种语言与隐私设计（无账号、无网络、无分析）不变；本分支不新增也不移除功能，菜单只多一行品牌项。
+- 授权不变：代码 MIT；`Tendedero` 名称与图标不在 MIT 授权内。
+- 自行复核差异：`git remote add upstream https://github.com/alejandrobujan/tendedero.git`，再执行 `git log --oneline upstream/main..HEAD`（当前 7 个提交、33 个文件）。
 
 ---
 
@@ -130,14 +167,21 @@ Tendedero runs entirely on your Mac, and your screenshots never leave it.
 ## Install
 
 Download the disk image from the [latest release](../../releases/latest),
-open it and drag Tendedero Plus to Applications. Or install it with Homebrew:
+open it and drag Tendedero Plus to Applications. To get the memory numbers in
+the table above, build from source instead: the released image predates the
+on-demand decoding and `MallocSpaceEfficient` changes.
+
+The Homebrew cask installs the **official** Tendedero, not this fork:
 
 ```sh
 brew install --cask alejandrobujan/tap/tendedero
 ```
 
-Tendedero is signed with a Developer ID and notarized by Apple, so it opens
-like any other app.
+The official app is signed with a Developer ID and notarized by Apple, so it
+opens like any other app. This fork is signed ad hoc, so the first time you
+open it, right-click the app and choose Open. `scripts/build-app.sh` and
+`scripts/make-dmg.sh` sign and notarize with your own Developer ID when
+`SIGN_IDENTITY` and the `tendedero-notary` profile are set.
 
 <br>
 

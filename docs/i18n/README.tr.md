@@ -121,10 +121,10 @@ Tendedero, Developer ID ile imzalı ve Apple tarafından onaylıdır; diğer uyg
 ## Kaynaktan derle
 
 ```sh
-git clone git@github.com:alejandrobujan/tendedero.git
-cd tendedero
+git clone https://github.com/Weicoz/tendedero-plus.git
+cd tendedero-plus
 scripts/build-app.sh
-open build/Tendedero.app
+open "build/Tendedero Plus.app"
 ```
 
 Swift araç zinciri gereklidir; Xcode isteğe bağlıdır. macOS 27 Komut Satırı Araçları ile script,

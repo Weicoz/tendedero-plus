@@ -122,10 +122,10 @@ Tendedero는 Developer ID로 서명되고 Apple의 공증을 받았기 때문에
 ## 소스에서 빌드하기
 
 ```sh
-git clone git@github.com:alejandrobujan/tendedero.git
-cd tendedero
+git clone https://github.com/Weicoz/tendedero-plus.git
+cd tendedero-plus
 scripts/build-app.sh
-open build/Tendedero.app
+open "build/Tendedero Plus.app"
 ```
 
 Swift 툴체인이 필요하며, Xcode는 없어도 돼요. macOS 27용 Command Line Tools를

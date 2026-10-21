@@ -124,10 +124,10 @@ ona görə də istənilən başqa proqram kimi açılır.
 ## Mənbə kodundan yığmaq
 
 ```sh
-git clone git@github.com:alejandrobujan/tendedero.git
-cd tendedero
+git clone https://github.com/Weicoz/tendedero-plus.git
+cd tendedero-plus
 scripts/build-app.sh
-open build/Tendedero.app
+open "build/Tendedero Plus.app"
 ```
 
 Yalnız Swift alətləri lazımdır, Xcode vacib deyil. macOS 27-nin Command Line

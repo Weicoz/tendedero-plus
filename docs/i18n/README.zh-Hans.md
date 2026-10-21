@@ -6,6 +6,12 @@
 <h3 align="center"><a href="https://tendedero.app/?lang=zh-Hans">在 tendedero.app 上直接用浏览器试用&nbsp;&rsaquo;</a></h3>
 
 <p align="center">
+  <b>Tendedero Plus — 极致内存优化版</b>
+  <br>
+  常驻内存：空绳 12 MB、挂 8 张截图 19 MB（官方原版 16 MB / 27 MB）。
+  <br>
+  <a href="#vs-upstream">相对官方原版优化了哪些内容&nbsp;&rsaquo;</a>
+  <br>
   免费开源。适用于 macOS 14 及以上。
   <br>
   <a href="../../../../releases/latest">下载&nbsp;&rsaquo;</a>
@@ -16,6 +22,59 @@
   <br>
   <sub>本文译自英文 README。如有出入，以英文版为准。</sub>
 </p>
+
+---
+
+<a id="vs-upstream"></a>
+
+### ✨ 相对官方原版的优化 (What is different from upstream)
+
+> 本仓库是官方 [alejandrobujan/tendedero](https://github.com/alejandrobujan/tendedero)（下称**官方原版**）的 fork，基线为官方 v1.5.0。
+> 功能与交互与官方一致，改动集中在三处：**常驻内存**、**命名标识**、**打包脚本**。
+
+#### 1. 常驻内存（主要改动）
+
+| 线收起稳态 | 官方原版 1.5.0 | Plus 已发布版 v1.5.0-plus | Plus 当前源码 1.5.2-plus |
+|:--|--:|--:|--:|
+| 空晾衣绳 | 16 MB | 16 MB | **12 MB** |
+| 挂 8 张真实尺寸截图 | 27 MB | 28 MB | **19 MB** |
+
+测量口径：同一台机器、均为 arm64 release 构建；官方按官方脚本参数，Plus 按本项目脚本参数。取系统 `footprint` 的 `64-bit Footprint` 值，指针离开菜单栏、线收起稳态；每档 3 轮 × 3 次读数取中位数（官方 16–17 / 24–28 MB，已发布 Plus 16–17 / 26–30 MB，当前源码 11–12 / 19 MB）。
+
+> **版本提示**：截至 2026-10-21，GitHub 已发布的 DMG 是 **v1.5.0-plus (build 6)**，不含 `MallocSpaceEfficient` 与照片按需解码，所以它的内存与官方原版相当（上表第 2 列）。第 3 列是当前源码 `scripts/build-app.sh` 的构建结果，也就是下一版会发布的内容。
+
+#### 2. 官方原版没有的内存与 CPU 优化
+
+1. **剪贴板大图零常驻**：官方持有上一张复制图片的原始 `Data`；Plus 只留 Hash 与 Size 元数据判重（`ClipboardWatcher.swift`），复制高清图不再产生数兆级隐式驻留。
+2. **照片按需解码**：官方在启动恢复时把每张照片解码成缩略图并常驻（`Line.swift` 的 `restore()` 逐张 `makeThumbnail`）；Plus 只在拉线时解码屏幕内及相邻两侧的卡片。
+3. **收线即释放像素**：线收起 0.3 秒后清空全部缩略图并调用 `malloc_zone_pressure_relief`（`Line.swift` 的 `unloadThumbnails()`）。
+4. **卡片尺寸只读文件头**：新增 `thumbnailSize()` 只读 `CGImageSource` 属性，卡片无需像素即可成形（`Line.swift`）。
+5. **面板视图按需挂载**：`NSHostingView` 只在拉线时挂载、收线后卸载，图层树不常驻（`AppDelegate.swift`）。
+6. **自适应轮询降频**：隐藏态 30 → 10 FPS，展开态恢复 30 FPS（`AppDelegate.swift` 的 `updateMouseTimerRate()`）。
+7. **屏幕对象持久缓存**：缓存屏幕信息，避免每次轮询调用 `NSScreen.screens` 的数组桥接拷贝。
+8. **主动内存紧缩与系统压力响应**：面板收起、丢弃截图、空闲时调用 `malloc_zone_pressure_relief`，并注册 `DispatchSourceMemoryPressure`（`AppDelegate.swift`）。
+9. **动画高清位图即时解绑**：飞落动画用的大图结束后立即置空 `CALayer.contents`（`CaptureFlight.swift`）。
+10. **编译参数**：追加 `-Xswiftc -Osize -Xswiftc -wmo`（`scripts/build-app.sh`）。
+
+#### 3. 命名、文案与打包（不影响功能）
+
+| 项目 | 官方原版 | Tendedero Plus |
+|:--|:--|:--|
+| 应用名 | `Tendedero` | `Tendedero Plus` |
+| 可执行文件 | `Tendedero` | `TendederoPlus` |
+| 版本号 | `1.5.0` (build 6) | `1.5.2-plus` (build 8) |
+| Bundle ID | `app.tendedero.Tendedero` | 未改，同左：可直接覆盖安装官方版，不会出现两个 App，设置不丢 |
+| 菜单栏 | `Tendedero`、`Quit Tendedero` | tooltip 与菜单顶部品牌项 `Tendedero Plus (v1.5.2-plus)`、`Quit Tendedero Plus`，10 种语言同步 |
+| 面板 | 无 | 右上 `TENDEDERO PLUS` 徽标；空线提示带 `PLUS` 胶囊 |
+| 打包产物 | `build/Tendedero.app`、`Tendedero-<版本>.dmg` | `build/Tendedero Plus.app`、`Tendedero-Plus-<版本>.dmg`，卷名 `Tendedero Plus` |
+
+#### 4. 与官方保持一致
+
+- 功能、手势、快捷键、10 种语言与隐私设计（无账号、无网络、无分析）不变；本分支不新增也不移除功能，菜单只多一行品牌项。
+- 授权不变：代码 MIT；`Tendedero` 名称与图标不在 MIT 授权内。
+- 自行复核差异：`git remote add upstream https://github.com/alejandrobujan/tendedero.git`，再执行 `git log --oneline upstream/main..HEAD`（当前 7 个提交、33 个文件）。
+
+---
 
 <p align="center">
   <a href="https://trendshift.io/repositories/287033?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-287033" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/287033/daily?language=Swift" alt="alejandrobujan%2Ftendedero | Trendshift" width="250" height="55"/></a>
@@ -104,23 +163,25 @@ Tendedero 完全在你的 Mac 上运行，截图不会离开这台电脑。
 
 ## 安装
 
-从[最新发布](../../../../releases/latest)下载磁盘映像，打开后把 Tendedero 拖进「应用程序」。也可以用 Homebrew 安装：
+从[最新发布](../../../../releases/latest)下载磁盘映像，打开后把 Tendedero Plus 拖进「应用程序」。要得到上表中的内存数字，请改为从源码构建：已发布的映像早于按需解码与 `MallocSpaceEfficient` 改动。
+
+Homebrew 安装的是**官方原版** Tendedero，不是本 fork：
 
 ```sh
 brew install --cask alejandrobujan/tap/tendedero
 ```
 
-Tendedero 已使用 Developer ID 签名并通过 Apple 公证，打开方式和其他 App 一样。
+官方原版已使用 Developer ID 签名并通过 Apple 公证，打开方式和其他 App 一样。本 fork 的构建是 ad hoc 签名，首次打开需右键点按 App 再选「打开」。设置 `SIGN_IDENTITY` 与 `tendedero-notary` 凭据后，`scripts/build-app.sh` 与 `scripts/make-dmg.sh` 会用你自己的 Developer ID 签名并公证。
 
 <br>
 
 ## 从源码构建
 
 ```sh
-git clone git@github.com:alejandrobujan/tendedero.git
-cd tendedero
+git clone https://github.com/Weicoz/tendedero-plus.git
+cd tendedero-plus
 scripts/build-app.sh
-open build/Tendedero.app
+open "build/Tendedero Plus.app"
 ```
 
 需要 Swift 工具链，Xcode 可选。若使用 macOS 27 的命令行工具，脚本会回退到随其一同安装的 macOS 26 SDK，因为新版 SDK 需要只有 Xcode 才带的 SwiftUI 宏插件。本地构建采用 ad-hoc 签名，所以每次重新构建后 macOS 都会再次询问桌面访问权限。

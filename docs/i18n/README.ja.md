@@ -118,10 +118,10 @@ TendederoはDeveloper IDで署名され、Appleによる公証を受けている
 ## ソースからビルド
 
 ```sh
-git clone git@github.com:alejandrobujan/tendedero.git
-cd tendedero
+git clone https://github.com/Weicoz/tendedero-plus.git
+cd tendedero-plus
 scripts/build-app.sh
-open build/Tendedero.app
+open "build/Tendedero Plus.app"
 ```
 
 Swiftツールチェーンが必要です。Xcodeは任意です。macOS 27のCommand Line Toolsを使う場合、新しいSDKにはXcodeにしか含まれないSwiftUIのマクロプラグインが必要なため、スクリプトは一緒にインストールされるmacOS 26 SDKに切り替えます。ローカルビルドはアドホック署名のため、再ビルドのたびにmacOSがデスクトップへのアクセスを改めて確認します。

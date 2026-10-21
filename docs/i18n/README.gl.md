@@ -123,10 +123,10 @@ abre coma calquera outra app.
 ## Compilar dende o código
 
 ```sh
-git clone git@github.com:alejandrobujan/tendedero.git
-cd tendedero
+git clone https://github.com/Weicoz/tendedero-plus.git
+cd tendedero-plus
 scripts/build-app.sh
-open build/Tendedero.app
+open "build/Tendedero Plus.app"
 ```
 
 Só precisas as ferramentas de Swift; Xcode é opcional. Se usas as Command
