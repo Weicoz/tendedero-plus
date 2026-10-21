@@ -17,6 +17,59 @@
   <sub>영어 README를 번역한 문서예요. 내용이 다를 경우 영어 원문이 우선해요.</sub>
 </p>
 
+---
+
+<a id="vs-upstream"></a>
+
+### ✨ 공식 원본과 다른 점 (What is different from upstream)
+
+> 이 저장소는 공식 [alejandrobujan/tendedero](https://github.com/alejandrobujan/tendedero)(이하 **공식 원본**)의 fork이고, 기준은 공식 v1.5.0이에요.
+> 기능과 동작은 공식과 같고, 변경은 세 곳에 모여 있어요: **상주 메모리**, **이름과 식별자**, **패키징 스크립트**.
+
+#### 1. 상주 메모리 (주요 변경)
+
+| 줄을 접은 상태 | 공식 원본 1.5.0 | Plus 공개 버전 v1.5.0-plus | Plus 현재 소스 1.5.2-plus |
+|:--|--:|--:|--:|
+| 빈 빨랫줄 | 16 MB | 16 MB | **12 MB** |
+| 실제 크기 스크린샷 8장 | 27 MB | 28 MB | **19 MB** |
+
+측정 기준: 같은 기기에서 모두 arm64 release로 빌드했고, 공식 원본은 공식 스크립트 옵션으로, Plus는 이 프로젝트 스크립트 옵션으로 빌드했어요. 시스템 `footprint`의 `64-bit Footprint` 값을 읽었고, 포인터를 메뉴 막대에서 떼어 줄이 접힌 안정 상태에서 쟀어요. 구간마다 3회 × 3번 읽은 값의 중앙값을 썼어요(공식 원본 16–17 / 24–28 MB, 공개된 Plus 16–17 / 26–30 MB, 현재 소스 11–12 / 19 MB).
+
+> **버전 안내**: 2026-10-21 기준 GitHub에 공개된 DMG는 **v1.5.0-plus (build 6)**이고, `MallocSpaceEfficient`와 사진 필요 시 디코딩이 들어 있지 않아요. 그래서 메모리는 공식 원본과 비슷해요(위 표의 2번째 열). 3번째 열은 현재 소스 `scripts/build-app.sh`의 빌드 결과이고, 다음 버전에서 공개될 내용이에요.
+
+#### 2. 공식 원본에 없는 메모리·CPU 최적화
+
+1. **클립보드 큰 이미지 상주 없음**: 공식 원본은 마지막으로 복사한 이미지의 원본 `Data`를 들고 있어요. Plus는 해시와 크기 메타데이터만 남겨 중복을 가려내요(`ClipboardWatcher.swift`). 고해상도 이미지를 복사해도 몇 MB가 몰래 상주하는 일이 없어요.
+2. **사진 필요 시 디코딩**: 공식 원본은 시작할 때 복원하면서 사진마다 썸네일로 디코딩해 상주시켜요(`Line.swift`의 `restore()`가 한 장씩 `makeThumbnail`). Plus는 빨랫줄을 내릴 때 화면 안과 양옆 카드만 디코딩해요.
+3. **줄을 접으면 픽셀 해제**: 줄이 접힌 뒤 0.3초가 지나면 썸네일을 모두 비우고 `malloc_zone_pressure_relief`를 호출해요(`Line.swift`의 `unloadThumbnails()`).
+4. **카드 크기는 파일 헤더만 읽음**: `thumbnailSize()`를 새로 두어 `CGImageSource` 속성만 읽어요. 픽셀 없이도 카드 모양이 잡혀요(`Line.swift`).
+5. **패널 뷰는 필요할 때만 마운트**: `NSHostingView`는 빨랫줄을 내릴 때만 붙이고 접으면 떼어 내요. 레이어 트리가 상주하지 않아요(`AppDelegate.swift`).
+6. **적응형 폴링 주기 조절**: 숨김 상태 30 → 10 FPS, 펼친 상태는 30 FPS로 돌아가요(`AppDelegate.swift`의 `updateMouseTimerRate()`).
+7. **화면 객체 영구 캐시**: 화면 정보를 캐시해 두어 폴링마다 `NSScreen.screens` 배열 브리지 복사가 일어나지 않아요.
+8. **능동 메모리 압축과 시스템 압력 대응**: 패널을 접을 때, 스크린샷을 버릴 때, 유휴 상태일 때 `malloc_zone_pressure_relief`를 호출하고 `DispatchSourceMemoryPressure`를 등록해요(`AppDelegate.swift`).
+9. **애니메이션 고해상도 비트맵 즉시 해제**: 날아가는 애니메이션에 쓰는 큰 이미지는 끝나는 즉시 `CALayer.contents`를 비워요(`CaptureFlight.swift`).
+10. **컴파일 옵션**: `-Xswiftc -Osize -Xswiftc -wmo`를 덧붙여요(`scripts/build-app.sh`).
+
+#### 3. 이름, 문구, 패키징 (기능에는 영향 없음)
+
+| 항목 | 공식 원본 | Tendedero Plus |
+|:--|:--|:--|
+| 앱 이름 | `Tendedero` | `Tendedero Plus` |
+| 실행 파일 | `Tendedero` | `TendederoPlus` |
+| 버전 | `1.5.0` (build 6) | `1.5.2-plus` (build 8) |
+| Bundle ID | `app.tendedero.Tendedero` | 그대로예요. 그래서 공식 원본 위에 바로 덮어 설치할 수 있고, 앱이 두 개로 보이거나 설정이 사라지지 않아요 |
+| 메뉴 막대 | `Tendedero`, `Quit Tendedero` | 툴팁과 메뉴 맨 위 브랜드 항목이 `Tendedero Plus (v1.5.2-plus)`, `Quit Tendedero Plus`로 바뀌고, 10개 언어에 모두 반영돼요 |
+| 패널 | 없음 | 오른쪽 위 `TENDEDERO PLUS` 배지, 빈 줄 안내에 `PLUS` 캡슐 |
+| 패키징 산출물 | `build/Tendedero.app`, `Tendedero-<版本>.dmg` | `build/Tendedero Plus.app`, `Tendedero-Plus-<版本>.dmg`, 볼륨 이름 `Tendedero Plus` |
+
+#### 4. 공식 원본과 같은 부분
+
+- 기능, 제스처, 단축키, 10개 언어, 개인정보 보호 설계(계정 없음, 네트워크 없음, 분석 없음)는 그대로예요. 이 브랜치는 기능을 더하거나 빼지 않고, 메뉴에 브랜드 항목 한 줄만 늘어요.
+- 라이선스도 그대로예요. 코드는 MIT이고, `Tendedero` 이름과 아이콘은 MIT 라이선스에 포함되지 않아요.
+- 직접 차이를 확인하려면 `git remote add upstream https://github.com/alejandrobujan/tendedero.git` 명령을 실행한 뒤 `git log --oneline upstream/main..HEAD`를 확인하세요(현재 커밋 7개, 파일 33개).
+
+---
+
 <p align="center">
   <a href="https://trendshift.io/repositories/287033?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-287033" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/287033/daily?language=Swift" alt="alejandrobujan%2Ftendedero | Trendshift" width="250" height="55"/></a>
   <a href="https://trendshift.io/repositories/287033?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-287033" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/287033/weekly?language=Swift" alt="alejandrobujan%2Ftendedero | Trendshift" width="250" height="55"/></a>

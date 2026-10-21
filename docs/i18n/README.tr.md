@@ -17,6 +17,59 @@
   <sub>Bu dosya İngilizce README'nin çevirisidir. Bir tutarsızlık varsa İngilizce sürümü esas alın.</sub>
 </p>
 
+---
+
+<a id="vs-upstream"></a>
+
+### ✨ Resmi sürüme göre iyileştirmeler (What is different from upstream)
+
+> Bu depo, resmi [alejandrobujan/tendedero](https://github.com/alejandrobujan/tendedero) deposunun (bundan sonra **resmi sürüm**) bir fork'udur; temel aldığı sürüm resmi v1.5.0'dır.
+> İşlevler ve etkileşim resmi sürümle aynıdır; değişiklikler üç noktada toplanır: **kalıcı bellek kullanımı**, **adlandırma**, **paketleme betiği**.
+
+#### 1. Kalıcı bellek kullanımı (ana değişiklik)
+
+| İp kapalıyken kararlı durum | Resmi sürüm 1.5.0 | Plus yayımlanmış sürüm v1.5.0-plus | Plus güncel kaynak 1.5.2-plus |
+|:--|--:|--:|--:|
+| Boş ip | 16 MB | 16 MB | **12 MB** |
+| 8 tam boy ekran görüntüsü asılıyken | 27 MB | 28 MB | **19 MB** |
+
+Ölçüm yöntemi: aynı makine, tümü arm64 release derlemesi; resmi sürüm kendi betik parametreleriyle, Plus bu projenin betik parametreleriyle derlendi. Sistemin `footprint` çıktısındaki `64-bit Footprint` değeri esas alındı; işaretçi menü çubuğundan ayrılmış, ip toplu ve kararlı durumda. Her düzey için 3 tur × 3 okumanın medyanı alındı (resmi sürüm 16–17 / 24–28 MB, yayımlanmış Plus 16–17 / 26–30 MB, güncel kaynak 11–12 / 19 MB).
+
+> **Sürüm notu**: 2026-10-21 itibarıyla GitHub'da yayımlanan DMG **v1.5.0-plus (build 6)** sürümüdür; `MallocSpaceEfficient` ve fotoğrafları isteğe bağlı çözme özelliğini içermez, bu yüzden belleği resmi sürümle aynı düzeydedir (yukarıdaki tablonun 2. sütunu). 3. sütun, güncel kaynak kodun `scripts/build-app.sh` ile derlenmesinin sonucudur; yani bir sonraki sürümde yayımlanacak değerler.
+
+#### 2. Resmi sürümde bulunmayan bellek ve CPU iyileştirmeleri
+
+1. **Panodaki büyük görseller bellekte tutulmaz**: Resmi sürüm, en son kopyalanan görselin ham `Data` değerini saklar; Plus yinelenen görseli ayırt etmek için yalnızca Hash ve Size üst verisini tutar (`ClipboardWatcher.swift`); yüksek çözünürlüklü bir görsel kopyalamak artık megabayt mertebesinde örtük bellek tutulmasına yol açmaz.
+2. **Fotoğraflar isteğe bağlı çözülür**: Resmi sürüm açılışta geri yükleme sırasında her fotoğrafı küçük resme çözüp bellekte tutar (`Line.swift` içindeki `restore()` her biri için `makeThumbnail` çağırır); Plus kartları yalnızca ip indirildiğinde, ekranda görünenler ve iki yanındakiler için çözer.
+3. **İp toplanınca pikseller serbest bırakılır**: İp toplandıktan 0,3 saniye sonra tüm küçük resimler boşaltılır ve `malloc_zone_pressure_relief` çağrılır (`Line.swift` içindeki `unloadThumbnails()`).
+4. **Kart boyutu yalnızca dosya başlığından okunur**: Eklenen `thumbnailSize()` yalnızca `CGImageSource` özelliklerini okur; kart piksellere gerek kalmadan oluşur (`Line.swift`).
+5. **Panel görünümü isteğe bağlı bağlanır**: `NSHostingView` yalnızca ip indirilirken bağlanır, ip toplandıktan sonra kaldırılır; katman ağacı bellekte kalmaz (`AppDelegate.swift`).
+6. **Uyarlanabilir yoklama hızı**: Gizli durumda 30 → 10 FPS, açık durumda yeniden 30 FPS (`AppDelegate.swift` içindeki `updateMouseTimerRate()`).
+7. **Ekran nesneleri kalıcı önbellekte**: Ekran bilgileri önbelleğe alınır; her yoklamada `NSScreen.screens` çağrısının dizi köprüleme kopyasından kaçınılır.
+8. **Proaktif bellek sıkıştırma ve sistem baskısına yanıt**: Panel toplandığında, ekran görüntüsü atıldığında ve boşta kalındığında `malloc_zone_pressure_relief` çağrılır; ayrıca `DispatchSourceMemoryPressure` kaydedilir (`AppDelegate.swift`).
+9. **Animasyondaki yüksek çözünürlüklü bitmap hemen bırakılır**: Uçuş animasyonunda kullanılan büyük görsel bitince `CALayer.contents` hemen boşaltılır (`CaptureFlight.swift`).
+10. **Derleme parametreleri**: `-Xswiftc -Osize -Xswiftc -wmo` eklendi (`scripts/build-app.sh`).
+
+#### 3. Adlandırma, metinler ve paketleme (işlevleri etkilemez)
+
+| Öğe | Resmi sürüm | Tendedero Plus |
+|:--|:--|:--|
+| Uygulama adı | `Tendedero` | `Tendedero Plus` |
+| Yürütülebilir dosya | `Tendedero` | `TendederoPlus` |
+| Sürüm numarası | `1.5.0` (build 6) | `1.5.2-plus` (build 8) |
+| Bundle ID | `app.tendedero.Tendedero` | Değişmedi, soldakiyle aynı: resmi sürümün üzerine doğrudan kurulabilir, iki ayrı uygulama oluşmaz, ayarlar korunur |
+| Menü çubuğu | `Tendedero`, `Quit Tendedero` | İpucu ve menünün üst kısmındaki marka öğesi `Tendedero Plus (v1.5.2-plus)`, `Quit Tendedero Plus`; 10 dilde aynı |
+| Panel | Yok | Sağ üstte `TENDEDERO PLUS` rozeti; boş ip ipucunda `PLUS` kapsülü |
+| Paket çıktıları | `build/Tendedero.app`, `Tendedero-<版本>.dmg` | `build/Tendedero Plus.app`, `Tendedero-Plus-<版本>.dmg`; birim adı `Tendedero Plus` |
+
+#### 4. Resmi sürümle aynı kalanlar
+
+- İşlevler, hareketler, kısayollar, 10 dil ve gizlilik tasarımı (hesap yok, ağ erişimi yok, analitik yok) değişmedi; bu dal hiçbir işlev eklemez veya kaldırmaz, menüye yalnızca bir marka satırı eklenir.
+- Lisans değişmedi: kod MIT; `Tendedero` adı ve simgesi MIT lisansına dahil değildir.
+- Farkları kendiniz doğrulayın: `git remote add upstream https://github.com/alejandrobujan/tendedero.git` komutunu çalıştırın, ardından `git log --oneline upstream/main..HEAD` (şu anda 7 commit, 33 dosya).
+
+---
+
 <p align="center">
   <a href="https://trendshift.io/repositories/287033?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-287033" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/287033/daily?language=Swift" alt="alejandrobujan%2Ftendedero | Trendshift" width="250" height="55"/></a>
   <a href="https://trendshift.io/repositories/287033?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-287033" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/287033/weekly?language=Swift" alt="alejandrobujan%2Ftendedero | Trendshift" width="250" height="55"/></a>

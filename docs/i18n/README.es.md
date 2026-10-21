@@ -17,6 +17,59 @@
   <sub>Traducción del README en inglés. Si algo no coincide, manda el inglés.</sub>
 </p>
 
+---
+
+<a id="vs-upstream"></a>
+
+### ✨ Qué cambia respecto a la versión oficial (What is different from upstream)
+
+> Este repositorio es un fork del proyecto oficial [alejandrobujan/tendedero](https://github.com/alejandrobujan/tendedero) (en adelante, la **versión oficial**), con la v1.5.0 como base.
+> La funcionalidad y el comportamiento son los mismos que en la versión oficial; los cambios se concentran en tres puntos: **memoria residente**, **nombre e identificadores** y **script de empaquetado**.
+
+#### 1. Memoria residente (el cambio principal)
+
+| Con la cuerda recogida | Versión oficial 1.5.0 | Plus publicado v1.5.0-plus | Plus, código actual 1.5.2-plus |
+|:--|--:|--:|--:|
+| Cuerda vacía | 16 MB | 16 MB | **12 MB** |
+| Ocho capturas a tamaño real colgadas | 27 MB | 28 MB | **19 MB** |
+
+Cómo se mide: mismo equipo y compilaciones release para arm64 en todos los casos; la oficial con los argumentos de su script y Plus con los del script de este proyecto. Se toma el valor `64-bit Footprint` del `footprint` del sistema, con el puntero fuera de la barra de menús y la cuerda recogida; mediana de 3 rondas × 3 lecturas por caso (oficial 16–17 / 24–28 MB, Plus publicado 16–17 / 26–30 MB, código actual 11–12 / 19 MB).
+
+> **Aviso de versión**: a 21 de octubre de 2026, la DMG publicada en GitHub es la **v1.5.0-plus (build 6)**, que no incluye `MallocSpaceEfficient` ni la decodificación de fotos bajo demanda, así que su memoria es similar a la de la versión oficial (segunda columna de la tabla). La tercera columna es el resultado de compilar el código actual con `scripts/build-app.sh`, es decir, lo que saldrá en la próxima versión.
+
+#### 2. Optimizaciones de memoria y CPU que no tiene la versión oficial
+
+1. **Imágenes grandes del portapapeles, cero residentes**: la versión oficial conserva el `Data` original de la última imagen copiada; Plus solo guarda un hash y el tamaño como metadatos para descartar duplicados (`ClipboardWatcher.swift`), así que copiar una imagen en alta resolución ya no deja varios megas residentes de forma implícita.
+2. **Fotos decodificadas bajo demanda**: al restaurar en el arranque, la versión oficial decodifica cada foto a miniatura y la deja residente (`restore()` de `Line.swift` llama a `makeThumbnail` foto a foto); Plus solo decodifica, al bajar la cuerda, las tarjetas que están en pantalla y las de los dos lados.
+3. **Al recoger la cuerda se liberan los píxeles**: 0,3 segundos después de recogerla se vacían todas las miniaturas y se llama a `malloc_zone_pressure_relief` (`unloadThumbnails()` de `Line.swift`).
+4. **El tamaño de la tarjeta sale solo de la cabecera del archivo**: se añade `thumbnailSize()`, que solo lee las propiedades de `CGImageSource`, así la tarjeta se monta sin necesidad de píxeles (`Line.swift`).
+5. **La vista del panel se monta solo cuando hace falta**: `NSHostingView` se monta al bajar la cuerda y se desmonta al recogerla; el árbol de capas no queda residente (`AppDelegate.swift`).
+6. **Sondeo adaptativo, menos frecuencia**: 30 → 10 FPS cuando está oculto y de nuevo 30 FPS al desplegarse (`updateMouseTimerRate()` de `AppDelegate.swift`).
+7. **Caché persistente de los objetos de pantalla**: se guarda en caché la información de las pantallas para no llamar a `NSScreen.screens` en cada sondeo ni copiar el array puente cada vez.
+8. **Compresión de memoria activa y respuesta a la presión del sistema**: al recoger el panel, al descartar capturas y al quedarse inactivo se llama a `malloc_zone_pressure_relief`, y se registra `DispatchSourceMemoryPressure` (`AppDelegate.swift`).
+9. **Los mapas de bits en alta resolución de la animación se sueltan al momento**: la imagen grande de la animación de caída se anula en `CALayer.contents` en cuanto termina (`CaptureFlight.swift`).
+10. **Argumentos de compilación**: se añaden `-Xswiftc -Osize -Xswiftc -wmo` (`scripts/build-app.sh`).
+
+#### 3. Nombre, textos y empaquetado (no afecta a la funcionalidad)
+
+| Elemento | Versión oficial | Tendedero Plus |
+|:--|:--|:--|
+| Nombre de la app | `Tendedero` | `Tendedero Plus` |
+| Ejecutable | `Tendedero` | `TendederoPlus` |
+| Versión | `1.5.0` (build 6) | `1.5.2-plus` (build 8) |
+| Bundle ID | `app.tendedero.Tendedero` | Sin cambios, igual que a la izquierda: se instala encima de la versión oficial sin más, no aparecen dos apps y no se pierden los ajustes |
+| Barra de menús | `Tendedero`, `Quit Tendedero` | tooltip y elemento de marca al principio del menú: `Tendedero Plus (v1.5.2-plus)`, `Quit Tendedero Plus`; sincronizado en los 10 idiomas |
+| Panel | Ninguno | Distintivo `TENDEDERO PLUS` arriba a la derecha; el aviso de cuerda vacía lleva una cápsula `PLUS` |
+| Artefactos de empaquetado | `build/Tendedero.app`, `Tendedero-<版本>.dmg` | `build/Tendedero Plus.app`, `Tendedero-Plus-<版本>.dmg`; nombre del volumen: `Tendedero Plus` |
+
+#### 4. Lo que se mantiene igual que en la versión oficial
+
+- La funcionalidad, los gestos, los atajos, los 10 idiomas y el diseño de privacidad (sin cuentas, sin red, sin analíticas) no cambian; esta rama no añade ni quita funciones y el menú solo gana una línea de marca.
+- La licencia no cambia: el código es MIT; el nombre y el icono de `Tendedero` quedan fuera de la licencia MIT.
+- Para comprobar las diferencias por tu cuenta: `git remote add upstream https://github.com/alejandrobujan/tendedero.git` y luego `git log --oneline upstream/main..HEAD` (ahora mismo, 7 commits y 33 archivos).
+
+---
+
 <p align="center">
   <a href="https://trendshift.io/repositories/287033?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-287033" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/287033/daily?language=Swift" alt="alejandrobujan%2Ftendedero | Trendshift" width="250" height="55"/></a>
   <a href="https://trendshift.io/repositories/287033?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-287033" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/287033/weekly?language=Swift" alt="alejandrobujan%2Ftendedero | Trendshift" width="250" height="55"/></a>

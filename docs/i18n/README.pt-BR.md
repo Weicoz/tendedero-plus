@@ -17,6 +17,59 @@
   <sub>Tradução do README em inglês. Em caso de divergência, vale a versão em inglês.</sub>
 </p>
 
+---
+
+<a id="vs-upstream"></a>
+
+### ✨ O que muda em relação à versão oficial (What is different from upstream)
+
+> Este repositório é um fork do [alejandrobujan/tendedero](https://github.com/alejandrobujan/tendedero) oficial (a seguir, a **versão oficial**), com base na v1.5.0.
+> Os recursos e a interação são os mesmos. As mudanças se concentram em três pontos: **memória residente**, **nome e identidade** e **script de empacotamento**.
+
+#### 1. Memória residente (a mudança principal)
+
+| Com o varal recolhido | Versão oficial 1.5.0 | Plus lançado v1.5.0-plus | Plus código atual 1.5.2-plus |
+|:--|--:|--:|--:|
+| Varal vazio | 16 MB | 16 MB | **12 MB** |
+| Oito capturas em tamanho real | 27 MB | 28 MB | **19 MB** |
+
+Como foi medido: mesma máquina, compilações release arm64 nas duas; a oficial com os parâmetros do script oficial, a Plus com os parâmetros do script deste projeto. Valor de `64-bit Footprint` do `footprint` do sistema, com o ponteiro fora da barra de menus e o varal recolhido; 3 rodadas × 3 leituras por caso, mediana (oficial 16–17 / 24–28 MB, Plus lançado 16–17 / 26–30 MB, código atual 11–12 / 19 MB).
+
+> **Aviso de versão**: em 21/10/2026, o DMG publicado no GitHub é o **v1.5.0-plus (build 6)**, sem `MallocSpaceEfficient` e sem decodificação de fotos sob demanda, então a memória dele fica parecida com a da versão oficial (2ª coluna da tabela acima). A 3ª coluna é o resultado da compilação do código atual em `scripts/build-app.sh`, ou seja, o que sai na próxima versão.
+
+#### 2. Otimizações de memória e CPU que a versão oficial não tem
+
+1. **Imagem grande copiada, zero residência**: a oficial guarda o `Data` original da última imagem copiada; a Plus guarda só metadados de hash e tamanho para deduplicar (`ClipboardWatcher.swift`), então copiar uma imagem em alta resolução não deixa mais vários megabytes residentes sem você ver.
+2. **Fotos decodificadas sob demanda**: ao restaurar na inicialização, a oficial decodifica cada foto em miniatura e a mantém residente (`restore()` de `Line.swift`, um `makeThumbnail` por foto); a Plus só decodifica, ao puxar o varal, os cartões que estão na tela e nos dois vizinhos.
+3. **Recolher o varal libera os pixels**: 0,3 segundo depois de recolher, todas as miniaturas são descartadas e o app chama `malloc_zone_pressure_relief` (`unloadThumbnails()` de `Line.swift`).
+4. **O tamanho do cartão vem só do cabeçalho do arquivo**: o novo `thumbnailSize()` lê apenas as propriedades do `CGImageSource`, então o cartão se forma sem os pixels (`Line.swift`).
+5. **A vista do painel é montada sob demanda**: a `NSHostingView` só é montada ao puxar o varal e desmontada ao recolher; a árvore de camadas não fica residente (`AppDelegate.swift`).
+6. **Polling adaptativo mais lento**: 30 → 10 FPS com o varal escondido, e volta a 30 FPS com ele aberto (`updateMouseTimerRate()` de `AppDelegate.swift`).
+7. **Cache permanente dos objetos de tela**: as informações das telas ficam em cache, sem a cópia por ponte de array que `NSScreen.screens` faz a cada polling.
+8. **Compactação ativa e resposta à pressão do sistema**: chama `malloc_zone_pressure_relief` ao recolher o painel, ao descartar uma captura e quando fica ocioso, e registra um `DispatchSourceMemoryPressure` (`AppDelegate.swift`).
+9. **Bitmaps nítidos da animação soltos na hora**: terminada a animação de queda, a imagem grande tem o `CALayer.contents` zerado imediatamente (`CaptureFlight.swift`).
+10. **Parâmetros de compilação**: `-Xswiftc -Osize -Xswiftc -wmo` acrescentados (`scripts/build-app.sh`).
+
+#### 3. Nome, textos e empacotamento (não afetam o funcionamento)
+
+| Item | Versão oficial | Tendedero Plus |
+|:--|:--|:--|
+| Nome do app | `Tendedero` | `Tendedero Plus` |
+| Executável | `Tendedero` | `TendederoPlus` |
+| Versão | `1.5.0` (build 6) | `1.5.2-plus` (build 8) |
+| Bundle ID | `app.tendedero.Tendedero` | Sem mudança, igual à esquerda: dá para instalar por cima da versão oficial, sem dois apps e sem perder os ajustes |
+| Barra de menus | `Tendedero`, `Quit Tendedero` | Tooltip e item de marca no topo do menu `Tendedero Plus (v1.5.2-plus)`, `Quit Tendedero Plus`, nos 10 idiomas |
+| Painel | Nenhum | Selo `TENDEDERO PLUS` no canto superior direito; a dica do varal vazio traz uma cápsula `PLUS` |
+| Artefatos | `build/Tendedero.app`, `Tendedero-<版本>.dmg` | `build/Tendedero Plus.app`, `Tendedero-Plus-<版本>.dmg`, volume `Tendedero Plus` |
+
+#### 4. Em sintonia com a versão oficial
+
+- Recursos, gestos, atalhos, os 10 idiomas e a privacidade (sem conta, sem rede, sem estatísticas) continuam iguais; este fork não acrescenta nem remove recursos, o menu só ganha uma linha de marca.
+- A licença não muda: código MIT; o nome e o ícone do `Tendedero` não entram no MIT.
+- Para conferir as diferenças você mesmo: `git remote add upstream https://github.com/alejandrobujan/tendedero.git` e depois `git log --oneline upstream/main..HEAD` (hoje 7 commits e 33 arquivos).
+
+---
+
 <p align="center">
   <a href="https://trendshift.io/repositories/287033?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-287033" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/287033/daily?language=Swift" alt="alejandrobujan%2Ftendedero | Trendshift" width="250" height="55"/></a>
   <a href="https://trendshift.io/repositories/287033?utm_source=trendshift-badge&amp;utm_medium=badge&amp;utm_campaign=badge-trendshift-287033" target="_blank" rel="noopener noreferrer"><img src="https://trendshift.io/api/badge/trendshift/repositories/287033/weekly?language=Swift" alt="alejandrobujan%2Ftendedero | Trendshift" width="250" height="55"/></a>
