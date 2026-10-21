@@ -24,18 +24,18 @@
 ### ✨ Rəsmi orijinaldan fərqlər (What is different from upstream)
 
 > Bu repozitoriya rəsmi [alejandrobujan/tendedero](https://github.com/alejandrobujan/tendedero) layihəsinin fork-udur (bundan sonra **rəsmi orijinal**), baza versiyası rəsmi v1.5.0-dır.
-> Funksiyalar və qarşılıqlı əlaqə rəsmi versiya ilə eynidir; dəyişikliklər üç yerdə cəmlənir: **daimi yaddaş**, **adlandırma**, **paketləmə skriptləri**.
+> Funksiyalar və qarşılıqlı əlaqə rəsmi versiya ilə eynidir, yalnız bir jest əlavə olunub: **göstəricini fotoşəklin üstündə saxlayıb Space** ilə önizləmə; qalan dəyişikliklər üç yerdə cəmlənir: **daimi yaddaş**, **adlandırma**, **paketləmə skriptləri**.
 
 #### 1. Daimi yaddaş (əsas dəyişiklik)
 
-| İp yığılmış sabit vəziyyət | Rəsmi orijinal 1.5.0 | Plus-un buraxılmış versiyası v1.5.0-plus | Plus-un cari mənbə kodu 1.5.2-plus |
-|:--|--:|--:|--:|
-| Boş ip | 16 MB | 16 MB | **12 MB** |
-| Həqiqi ölçüdə 8 ekran şəkli asılmış halda | 27 MB | 28 MB | **19 MB** |
+| İp yığılmış sabit vəziyyət | Rəsmi orijinal 1.5.0 | Tendedero Plus v1.5.2-plus |
+|:--|--:|--:|
+| Boş ip | 16 MB | **12 MB** |
+| Həqiqi ölçüdə 8 ekran şəkli asılmış halda | 27 MB | **19 MB** |
 
-Ölçmə qaydası: eyni maşın, hamısı arm64 release yığımıdır; rəsmi versiya öz skript parametrləri ilə, Plus isə bu layihənin skript parametrləri ilə. Sistemin `footprint` alətinin `64-bit Footprint` dəyəri götürülür, göstərici menyu panelindən çıxdıqdan və ip yığıldıqdan sonrakı sabit vəziyyətdə; hər səviyyə üçün 3 tur × 3 oxunuşun medianı (rəsmi 16–17 / 24–28 MB, buraxılmış Plus 16–17 / 26–30 MB, cari mənbə kodu 11–12 / 19 MB).
+Ölçmə qaydası: eyni maşın, hamısı arm64 release yığımıdır; rəsmi versiya öz skript parametrləri ilə, Plus isə bu layihənin skript parametrləri ilə. Sistemin `footprint` alətinin `64-bit Footprint` dəyəri götürülür, göstərici menyu panelindən çıxdıqdan və ip yığıldıqdan sonrakı sabit vəziyyətdə; hər səviyyə üçün 3 tur × 3 oxunuşun medianı (rəsmi 16–17 / 24–28 MB, cari mənbə kodu 11–12 / 19 MB).
 
-> **Versiya qeydi**: 2026-10-21 tarixinə olan vəziyyətə görə GitHub-da buraxılmış DMG **v1.5.0-plus (build 6)**-dır, onda `MallocSpaceEfficient` və fotoşəkillərin tələb üzrə dekodlanması yoxdur, ona görə də yaddaş göstəricisi rəsmi orijinala bərabərdir (yuxarıdakı cədvəlin 2-ci sütunu). 3-cü sütun cari mənbə kodunun `scripts/build-app.sh` ilə yığım nəticəsidir, yəni növbəti buraxılışda olacaq məzmun.
+> **Versiya qeydi**: GitHub-da buraxılmış DMG **v1.5.2-plus (build 8)**-dır və bu səhifədəki rəqəmlər ona aiddir; daha əvvəlki v1.5.0-plus (build 6) `MallocSpaceEfficient` və fotoşəkillərin tələb üzrə dekodlanmasını ehtiva etmirdi, yaddaşı rəsmi orijinala bərabər idi.
 
 #### 2. Rəsmi orijinalda olmayan yaddaş və CPU optimallaşdırmaları
 
@@ -64,9 +64,9 @@
 
 #### 4. Rəsmi orijinal ilə uyğunluq
 
-- Funksiyalar, jestlər, qısayollar, 10 dil və məxfilik dizaynı (hesab yoxdur, internet yoxdur, analitika yoxdur) dəyişmir; bu budaq nə funksiya əlavə edir, nə də çıxarır, menyuda yalnız bir sətir brend elementi artır.
+- Qısayollar, 10 dil və məxfilik dizaynı (hesab yoxdur, internet yoxdur, analitika yoxdur) dəyişmir; əlavə olunan yeganə jest **göstəricini fotoşəklin üstündə saxlayıb Space** ilə önizləmədir, qalan funksiyalar rəsmi versiya ilə eynidir və menyuda yalnız bir sətir brend elementi artır.
 - Lisenziya dəyişmir: kod MIT lisenziyalıdır; `Tendedero` adı və ikonası MIT lisenziyasına daxil deyil.
-- Fərqləri özünüz yoxlayın: `git remote add upstream https://github.com/alejandrobujan/tendedero.git`, sonra `git log --oneline upstream/main..HEAD` icra edin (hazırda 7 commit, 33 fayl).
+- Fərqləri özünüz yoxlayın: `git remote add upstream https://github.com/alejandrobujan/tendedero.git`, sonra `git log --oneline upstream/main..HEAD` icra edin (hazırda 11 commit, 42 fayl).
 
 ---
 

@@ -24,18 +24,18 @@
 ### ✨ Optimisations par rapport à l’original officiel (What is different from upstream)
 
 > Ce dépôt est un fork de l’original officiel [alejandrobujan/tendedero](https://github.com/alejandrobujan/tendedero) (ci-après **l’original officiel**), sur la base de la version officielle v1.5.0.
-> Fonctionnalités et interactions identiques à celles de l’officiel ; les changements portent sur trois points : **mémoire résidente**, **nommage**, **script d’empaquetage**.
+> Fonctionnalités et interactions identiques à celles de l’officiel, avec un geste en plus : **poser le pointeur sur une photo et appuyer sur Espace** pour la prévisualiser ; le reste des changements porte sur trois points : **mémoire résidente**, **nommage**, **script d’empaquetage**.
 
 #### 1. Mémoire résidente (le changement principal)
 
-| Corde rangée, régime stable | Original officiel 1.5.0 | Plus publié v1.5.0-plus | Plus, source actuelle 1.5.2-plus |
-|:--|--:|--:|--:|
-| Corde vide | 16 MB | 16 MB | **12 MB** |
-| 8 captures en taille réelle accrochées | 27 MB | 28 MB | **19 MB** |
+| Corde rangée, régime stable | Original officiel 1.5.0 | Tendedero Plus v1.5.2-plus |
+|:--|--:|--:|
+| Corde vide | 16 MB | **12 MB** |
+| 8 captures en taille réelle accrochées | 27 MB | **19 MB** |
 
-Protocole de mesure : même machine, builds arm64 release dans les deux cas ; l’officiel avec les paramètres de son script, Plus avec ceux du script de ce projet. On relève la valeur `64-bit Footprint` de l’outil système `footprint`, pointeur hors de la barre des menus, corde rangée et régime stable ; médiane de 3 séries × 3 relevés par palier (officiel 16–17 / 24–28 MB, Plus publié 16–17 / 26–30 MB, source actuelle 11–12 / 19 MB).
+Protocole de mesure : même machine, builds arm64 release dans les deux cas ; l’officiel avec les paramètres de son script, Plus avec ceux du script de ce projet. On relève la valeur `64-bit Footprint` de l’outil système `footprint`, pointeur hors de la barre des menus, corde rangée et régime stable ; médiane de 3 séries × 3 relevés par palier (officiel 16–17 / 24–28 MB, source actuelle 11–12 / 19 MB).
 
-> **Note de version** : au 2026-10-21, le DMG publié sur GitHub est **v1.5.0-plus (build 6)** ; il n’inclut ni `MallocSpaceEfficient` ni le décodage des photos à la demande, sa mémoire est donc du même ordre que celle de l’original officiel (2e colonne du tableau ci-dessus). La 3e colonne donne le résultat de la compilation de la source actuelle par `scripts/build-app.sh`, c’est-à-dire le contenu de la prochaine version.
+> **Note de version** : le DMG publié sur GitHub est **v1.5.2-plus (build 8)**, la version à laquelle correspondent les chiffres de cette page ; la précédente, v1.5.0-plus (build 6), n’incluait ni `MallocSpaceEfficient` ni le décodage des photos à la demande, sa mémoire était donc du même ordre que celle de l’original officiel.
 
 #### 2. Optimisations mémoire et CPU absentes de l’original officiel
 
@@ -64,9 +64,9 @@ Protocole de mesure : même machine, builds arm64 release dans les deux cas ; l�
 
 #### 4. Alignement avec l’original officiel
 
-- Fonctionnalités, gestes, raccourcis, 10 langues et conception de la confidentialité (pas de compte, pas de réseau, pas de statistiques) inchangés ; cette branche n’ajoute ni ne retire de fonctionnalité, le menu ne compte qu’une entrée de marque en plus.
+- Les raccourcis, les 10 langues et la conception de la confidentialité (pas de compte, pas de réseau, pas de statistiques) sont inchangés ; le seul geste ajouté est **poser le pointeur sur une photo et appuyer sur Espace** pour la prévisualiser, le reste est identique à l’officiel et le menu ne compte qu’une entrée de marque en plus.
 - Licence inchangée : le code est sous MIT ; le nom et l’icône `Tendedero` n’en font pas partie.
-- Pour vérifier les différences vous-même : `git remote add upstream https://github.com/alejandrobujan/tendedero.git`, puis `git log --oneline upstream/main..HEAD` (7 commits et 33 fichiers à ce jour).
+- Pour vérifier les différences vous-même : `git remote add upstream https://github.com/alejandrobujan/tendedero.git`, puis `git log --oneline upstream/main..HEAD` (11 commits et 42 fichiers à ce jour).
 
 ---
 

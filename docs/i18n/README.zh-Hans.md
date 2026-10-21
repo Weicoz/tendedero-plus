@@ -30,18 +30,18 @@
 ### ✨ 相对官方原版的优化 (What is different from upstream)
 
 > 本仓库是官方 [alejandrobujan/tendedero](https://github.com/alejandrobujan/tendedero)（下称**官方原版**）的 fork，基线为官方 v1.5.0。
-> 功能与交互与官方一致，改动集中在三处：**常驻内存**、**命名标识**、**打包脚本**。
+> 功能与交互与官方一致，只多一处手势：**指针停在照片上按空格**预览；其余改动集中在三处：**常驻内存**、**命名标识**、**打包脚本**。
 
 #### 1. 常驻内存（主要改动）
 
-| 线收起稳态 | 官方原版 1.5.0 | Plus 已发布版 v1.5.0-plus | Plus 当前源码 1.5.2-plus |
-|:--|--:|--:|--:|
-| 空晾衣绳 | 16 MB | 16 MB | **12 MB** |
-| 挂 8 张真实尺寸截图 | 27 MB | 28 MB | **19 MB** |
+| 线收起稳态 | 官方原版 1.5.0 | Tendedero Plus v1.5.2-plus |
+|:--|--:|--:|
+| 空晾衣绳 | 16 MB | **12 MB** |
+| 挂 8 张真实尺寸截图 | 27 MB | **19 MB** |
 
-测量口径：同一台机器、均为 arm64 release 构建；官方按官方脚本参数，Plus 按本项目脚本参数。取系统 `footprint` 的 `64-bit Footprint` 值，指针离开菜单栏、线收起稳态；每档 3 轮 × 3 次读数取中位数（官方 16–17 / 24–28 MB，已发布 Plus 16–17 / 26–30 MB，当前源码 11–12 / 19 MB）。
+测量口径：同一台机器、均为 arm64 release 构建；官方按官方脚本参数，Plus 按本项目脚本参数。取系统 `footprint` 的 `64-bit Footprint` 值，指针离开菜单栏、线收起稳态；每档 3 轮 × 3 次读数取中位数（官方 16–17 / 24–28 MB，当前源码 11–12 / 19 MB）。
 
-> **版本提示**：截至 2026-10-21，GitHub 已发布的 DMG 是 **v1.5.0-plus (build 6)**，不含 `MallocSpaceEfficient` 与照片按需解码，所以它的内存与官方原版相当（上表第 2 列）。第 3 列是当前源码 `scripts/build-app.sh` 的构建结果，也就是下一版会发布的内容。
+> **版本提示**：GitHub 上已发布的 DMG 是 **v1.5.2-plus (build 8)**，也就是本页数字对应的版本；更早的 v1.5.0-plus (build 6) 不含 `MallocSpaceEfficient` 与照片按需解码，内存与官方原版相当。
 
 #### 2. 官方原版没有的内存与 CPU 优化
 
@@ -70,9 +70,9 @@
 
 #### 4. 与官方保持一致
 
-- 功能、手势、快捷键、10 种语言与隐私设计（无账号、无网络、无分析）不变；本分支不新增也不移除功能，菜单只多一行品牌项。
+- 快捷键、10 种语言与隐私设计（无账号、无网络、无分析）不变；唯一新增的手势是「指针停在照片上按空格」预览，其余功能与官方一致，菜单只多一行品牌项。
 - 授权不变：代码 MIT；`Tendedero` 名称与图标不在 MIT 授权内。
-- 自行复核差异：`git remote add upstream https://github.com/alejandrobujan/tendedero.git`，再执行 `git log --oneline upstream/main..HEAD`（当前 7 个提交、33 个文件）。
+- 自行复核差异：`git remote add upstream https://github.com/alejandrobujan/tendedero.git`，再执行 `git log --oneline upstream/main..HEAD`（当前 11 个提交、42 个文件）。
 
 ---
 

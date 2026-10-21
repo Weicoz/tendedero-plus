@@ -24,18 +24,18 @@
 ### ✨ O que muda em relação à versão oficial (What is different from upstream)
 
 > Este repositório é um fork do [alejandrobujan/tendedero](https://github.com/alejandrobujan/tendedero) oficial (a seguir, a **versão oficial**), com base na v1.5.0.
-> Os recursos e a interação são os mesmos. As mudanças se concentram em três pontos: **memória residente**, **nome e identidade** e **script de empacotamento**.
+> Os recursos e a interação são os mesmos da versão oficial, com um gesto a mais: **parar o ponteiro sobre uma foto e pressionar Espaço** para pré-visualizar; o resto das mudanças se concentra em três pontos: **memória residente**, **nome e identidade** e **script de empacotamento**.
 
 #### 1. Memória residente (a mudança principal)
 
-| Com o varal recolhido | Versão oficial 1.5.0 | Plus lançado v1.5.0-plus | Plus código atual 1.5.2-plus |
-|:--|--:|--:|--:|
-| Varal vazio | 16 MB | 16 MB | **12 MB** |
-| Oito capturas em tamanho real | 27 MB | 28 MB | **19 MB** |
+| Com o varal recolhido | Versão oficial 1.5.0 | Tendedero Plus v1.5.2-plus |
+|:--|--:|--:|
+| Varal vazio | 16 MB | **12 MB** |
+| Oito capturas em tamanho real | 27 MB | **19 MB** |
 
-Como foi medido: mesma máquina, compilações release arm64 nas duas; a oficial com os parâmetros do script oficial, a Plus com os parâmetros do script deste projeto. Valor de `64-bit Footprint` do `footprint` do sistema, com o ponteiro fora da barra de menus e o varal recolhido; 3 rodadas × 3 leituras por caso, mediana (oficial 16–17 / 24–28 MB, Plus lançado 16–17 / 26–30 MB, código atual 11–12 / 19 MB).
+Como foi medido: mesma máquina, compilações release arm64 nas duas; a oficial com os parâmetros do script oficial, a Plus com os parâmetros do script deste projeto. Valor de `64-bit Footprint` do `footprint` do sistema, com o ponteiro fora da barra de menus e o varal recolhido; 3 rodadas × 3 leituras por caso, mediana (oficial 16–17 / 24–28 MB, código atual 11–12 / 19 MB).
 
-> **Aviso de versão**: em 21/10/2026, o DMG publicado no GitHub é o **v1.5.0-plus (build 6)**, sem `MallocSpaceEfficient` e sem decodificação de fotos sob demanda, então a memória dele fica parecida com a da versão oficial (2ª coluna da tabela acima). A 3ª coluna é o resultado da compilação do código atual em `scripts/build-app.sh`, ou seja, o que sai na próxima versão.
+> **Aviso de versão**: o DMG publicado no GitHub é o **v1.5.2-plus (build 8)**, a versão a que correspondem os números desta página; o anterior, v1.5.0-plus (build 6), não tinha `MallocSpaceEfficient` nem decodificação de fotos sob demanda, então a memória ficava parecida com a da versão oficial.
 
 #### 2. Otimizações de memória e CPU que a versão oficial não tem
 
@@ -64,9 +64,9 @@ Como foi medido: mesma máquina, compilações release arm64 nas duas; a oficial
 
 #### 4. Em sintonia com a versão oficial
 
-- Recursos, gestos, atalhos, os 10 idiomas e a privacidade (sem conta, sem rede, sem estatísticas) continuam iguais; este fork não acrescenta nem remove recursos, o menu só ganha uma linha de marca.
+- Atalhos, os 10 idiomas e a privacidade (sem conta, sem rede, sem estatísticas) continuam iguais; o único gesto acrescentado é **parar o ponteiro sobre uma foto e pressionar Espaço** para pré-visualizar, o resto segue igual ao oficial e o menu só ganha uma linha de marca.
 - A licença não muda: código MIT; o nome e o ícone do `Tendedero` não entram no MIT.
-- Para conferir as diferenças você mesmo: `git remote add upstream https://github.com/alejandrobujan/tendedero.git` e depois `git log --oneline upstream/main..HEAD` (hoje 7 commits e 33 arquivos).
+- Para conferir as diferenças você mesmo: `git remote add upstream https://github.com/alejandrobujan/tendedero.git` e depois `git log --oneline upstream/main..HEAD` (hoje 11 commits e 42 arquivos).
 
 ---
 

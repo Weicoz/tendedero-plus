@@ -24,18 +24,18 @@
 ### ✨ Qué cambia respecto a la versión oficial (What is different from upstream)
 
 > Este repositorio es un fork del proyecto oficial [alejandrobujan/tendedero](https://github.com/alejandrobujan/tendedero) (en adelante, la **versión oficial**), con la v1.5.0 como base.
-> La funcionalidad y el comportamiento son los mismos que en la versión oficial; los cambios se concentran en tres puntos: **memoria residente**, **nombre e identificadores** y **script de empaquetado**.
+> La funcionalidad y el comportamiento son los mismos que en la versión oficial, con un gesto añadido: **dejar el puntero sobre una foto y pulsar Espacio** para previsualizarla; el resto de cambios se concentra en tres puntos: **memoria residente**, **nombre e identificadores** y **script de empaquetado**.
 
 #### 1. Memoria residente (el cambio principal)
 
-| Con la cuerda recogida | Versión oficial 1.5.0 | Plus publicado v1.5.0-plus | Plus, código actual 1.5.2-plus |
-|:--|--:|--:|--:|
-| Cuerda vacía | 16 MB | 16 MB | **12 MB** |
-| Ocho capturas a tamaño real colgadas | 27 MB | 28 MB | **19 MB** |
+| Con la cuerda recogida | Versión oficial 1.5.0 | Tendedero Plus v1.5.2-plus |
+|:--|--:|--:|
+| Cuerda vacía | 16 MB | **12 MB** |
+| Ocho capturas a tamaño real colgadas | 27 MB | **19 MB** |
 
-Cómo se mide: mismo equipo y compilaciones release para arm64 en todos los casos; la oficial con los argumentos de su script y Plus con los del script de este proyecto. Se toma el valor `64-bit Footprint` del `footprint` del sistema, con el puntero fuera de la barra de menús y la cuerda recogida; mediana de 3 rondas × 3 lecturas por caso (oficial 16–17 / 24–28 MB, Plus publicado 16–17 / 26–30 MB, código actual 11–12 / 19 MB).
+Cómo se mide: mismo equipo y compilaciones release para arm64 en todos los casos; la oficial con los argumentos de su script y Plus con los del script de este proyecto. Se toma el valor `64-bit Footprint` del `footprint` del sistema, con el puntero fuera de la barra de menús y la cuerda recogida; mediana de 3 rondas × 3 lecturas por caso (oficial 16–17 / 24–28 MB, código actual 11–12 / 19 MB).
 
-> **Aviso de versión**: a 21 de octubre de 2026, la DMG publicada en GitHub es la **v1.5.0-plus (build 6)**, que no incluye `MallocSpaceEfficient` ni la decodificación de fotos bajo demanda, así que su memoria es similar a la de la versión oficial (segunda columna de la tabla). La tercera columna es el resultado de compilar el código actual con `scripts/build-app.sh`, es decir, lo que saldrá en la próxima versión.
+> **Aviso de versión**: la DMG publicada en GitHub es la **v1.5.2-plus (build 8)**, la versión a la que corresponden los números de esta página; la anterior, v1.5.0-plus (build 6), no incluía `MallocSpaceEfficient` ni la decodificación de fotos bajo demanda, así que su memoria era similar a la de la versión oficial.
 
 #### 2. Optimizaciones de memoria y CPU que no tiene la versión oficial
 
@@ -64,9 +64,9 @@ Cómo se mide: mismo equipo y compilaciones release para arm64 en todos los caso
 
 #### 4. Lo que se mantiene igual que en la versión oficial
 
-- La funcionalidad, los gestos, los atajos, los 10 idiomas y el diseño de privacidad (sin cuentas, sin red, sin analíticas) no cambian; esta rama no añade ni quita funciones y el menú solo gana una línea de marca.
+- Los atajos, los 10 idiomas y el diseño de privacidad (sin cuentas, sin red, sin analíticas) no cambian; el único gesto añadido es **dejar el puntero sobre una foto y pulsar Espacio** para previsualizarla, el resto sigue igual que en la versión oficial y el menú solo gana una línea de marca.
 - La licencia no cambia: el código es MIT; el nombre y el icono de `Tendedero` quedan fuera de la licencia MIT.
-- Para comprobar las diferencias por tu cuenta: `git remote add upstream https://github.com/alejandrobujan/tendedero.git` y luego `git log --oneline upstream/main..HEAD` (ahora mismo, 7 commits y 33 archivos).
+- Para comprobar las diferencias por tu cuenta: `git remote add upstream https://github.com/alejandrobujan/tendedero.git` y luego `git log --oneline upstream/main..HEAD` (ahora mismo, 11 commits y 42 archivos).
 
 ---
 

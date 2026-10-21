@@ -24,18 +24,18 @@
 ### ✨ Melloras respecto da orixinal oficial (What is different from upstream)
 
 > Este repositorio é un fork de [alejandrobujan/tendedero](https://github.com/alejandrobujan/tendedero), a **orixinal oficial**, coa base na v1.5.0 oficial.
-> A funcionalidade e o comportamento son os mesmos que na oficial; os cambios concéntranse en tres puntos: **memoria residente**, **nome e identificadores** e **script de empaquetado**.
+> A funcionalidade e o comportamento son os mesmos que na oficial, cun xesto engadido: **deixar o punteiro sobre unha foto e premer Espazo** para previsualizala; o resto dos cambios concéntrase en tres puntos: **memoria residente**, **nome e identificadores** e **script de empaquetado**.
 
 #### 1. Memoria residente (o cambio principal)
 
-| Corda recollida en estado estable | Orixinal oficial 1.5.0 | Versión publicada de Plus v1.5.0-plus | Código actual de Plus 1.5.2-plus |
-|:--|--:|--:|--:|
-| Corda baleira | 16 MB | 16 MB | **12 MB** |
-| 8 capturas a tamaño real penduradas | 27 MB | 28 MB | **19 MB** |
+| Corda recollida en estado estable | Orixinal oficial 1.5.0 | Tendedero Plus v1.5.2-plus |
+|:--|--:|--:|
+| Corda baleira | 16 MB | **12 MB** |
+| 8 capturas a tamaño real penduradas | 27 MB | **19 MB** |
 
-Como se mediu: a mesma máquina e, en todos os casos, compilacións arm64 release; a oficial cos parámetros do seu script e Plus cos deste proxecto. Lese o valor `64-bit Footprint` do `footprint` do sistema, co punteiro fóra da barra de menús e a corda recollida en estado estable; en cada caso, 3 roldas × 3 lecturas e collemos a mediana (oficial 16–17 / 24–28 MB, Plus publicado 16–17 / 26–30 MB, código actual 11–12 / 19 MB).
+Como se mediu: a mesma máquina e, en todos os casos, compilacións arm64 release; a oficial cos parámetros do seu script e Plus cos deste proxecto. Lese o valor `64-bit Footprint` do `footprint` do sistema, co punteiro fóra da barra de menús e a corda recollida en estado estable; en cada caso, 3 roldas × 3 lecturas e collemos a mediana (oficial 16–17 / 24–28 MB, código actual 11–12 / 19 MB).
 
-> **Nota sobre versións**: a 2026-10-21, o DMG publicado en GitHub é a **v1.5.0-plus (build 6)**, que non inclúe `MallocSpaceEfficient` nin a decodificación de fotos a demanda, así que a súa memoria é comparable á da orixinal oficial (2ª columna da táboa). A 3ª columna é o resultado da compilación do código actual con `scripts/build-app.sh`, é dicir, o que sairá na próxima versión.
+> **Nota sobre versións**: o DMG publicado en GitHub é a **v1.5.2-plus (build 8)**, a versión á que corresponden os números desta páxina; a anterior, v1.5.0-plus (build 6), non incluía `MallocSpaceEfficient` nin a decodificación de fotos a demanda, así que a súa memoria era comparable á da orixinal oficial.
 
 #### 2. Melloras de memoria e CPU que a orixinal oficial non ten
 
@@ -64,9 +64,9 @@ Como se mediu: a mesma máquina e, en todos os casos, compilacións arm64 releas
 
 #### 4. O que se mantén igual que na orixinal oficial
 
-- A funcionalidade, os xestos, os atallos, os 10 idiomas e o deseño de privacidade (sen contas, sen rede, sen analíticas) non cambian; esta rama non engade nin quita funcionalidades, só suma unha liña de marca no menú.
+- Os atallos, os 10 idiomas e o deseño de privacidade (sen contas, sen rede, sen analíticas) non cambian; o único xesto engadido é **deixar o punteiro sobre unha foto e premer Espazo** para previsualizala, o resto segue igual que na oficial e só suma unha liña de marca no menú.
 - A licenza non cambia: o código é MIT; o nome e a icona de `Tendedero` quedan fóra da licenza MIT.
-- Para comprobar as diferenzas ti mesmo: `git remote add upstream https://github.com/alejandrobujan/tendedero.git` e despois `git log --oneline upstream/main..HEAD` (agora mesmo 7 commits e 33 ficheiros).
+- Para comprobar as diferenzas ti mesmo: `git remote add upstream https://github.com/alejandrobujan/tendedero.git` e despois `git log --oneline upstream/main..HEAD` (agora mesmo 11 commits e 42 ficheiros).
 
 ---
 

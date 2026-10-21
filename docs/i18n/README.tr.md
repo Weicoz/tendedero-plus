@@ -24,18 +24,18 @@
 ### ✨ Resmi sürüme göre iyileştirmeler (What is different from upstream)
 
 > Bu depo, resmi [alejandrobujan/tendedero](https://github.com/alejandrobujan/tendedero) deposunun (bundan sonra **resmi sürüm**) bir fork'udur; temel aldığı sürüm resmi v1.5.0'dır.
-> İşlevler ve etkileşim resmi sürümle aynıdır; değişiklikler üç noktada toplanır: **kalıcı bellek kullanımı**, **adlandırma**, **paketleme betiği**.
+> İşlevler ve etkileşim resmi sürümle aynıdır; eklenen tek hareket: **işaretçiyi fotoğrafın üzerinde tutup Boşluk** ile önizleme. Kalan değişiklikler üç noktada toplanır: **kalıcı bellek kullanımı**, **adlandırma**, **paketleme betiği**.
 
 #### 1. Kalıcı bellek kullanımı (ana değişiklik)
 
-| İp kapalıyken kararlı durum | Resmi sürüm 1.5.0 | Plus yayımlanmış sürüm v1.5.0-plus | Plus güncel kaynak 1.5.2-plus |
-|:--|--:|--:|--:|
-| Boş ip | 16 MB | 16 MB | **12 MB** |
-| 8 tam boy ekran görüntüsü asılıyken | 27 MB | 28 MB | **19 MB** |
+| İp kapalıyken kararlı durum | Resmi sürüm 1.5.0 | Tendedero Plus v1.5.2-plus |
+|:--|--:|--:|
+| Boş ip | 16 MB | **12 MB** |
+| 8 tam boy ekran görüntüsü asılıyken | 27 MB | **19 MB** |
 
-Ölçüm yöntemi: aynı makine, tümü arm64 release derlemesi; resmi sürüm kendi betik parametreleriyle, Plus bu projenin betik parametreleriyle derlendi. Sistemin `footprint` çıktısındaki `64-bit Footprint` değeri esas alındı; işaretçi menü çubuğundan ayrılmış, ip toplu ve kararlı durumda. Her düzey için 3 tur × 3 okumanın medyanı alındı (resmi sürüm 16–17 / 24–28 MB, yayımlanmış Plus 16–17 / 26–30 MB, güncel kaynak 11–12 / 19 MB).
+Ölçüm yöntemi: aynı makine, tümü arm64 release derlemesi; resmi sürüm kendi betik parametreleriyle, Plus bu projenin betik parametreleriyle derlendi. Sistemin `footprint` çıktısındaki `64-bit Footprint` değeri esas alındı; işaretçi menü çubuğundan ayrılmış, ip toplu ve kararlı durumda. Her düzey için 3 tur × 3 okumanın medyanı alındı (resmi sürüm 16–17 / 24–28 MB, güncel kaynak 11–12 / 19 MB).
 
-> **Sürüm notu**: 2026-10-21 itibarıyla GitHub'da yayımlanan DMG **v1.5.0-plus (build 6)** sürümüdür; `MallocSpaceEfficient` ve fotoğrafları isteğe bağlı çözme özelliğini içermez, bu yüzden belleği resmi sürümle aynı düzeydedir (yukarıdaki tablonun 2. sütunu). 3. sütun, güncel kaynak kodun `scripts/build-app.sh` ile derlenmesinin sonucudur; yani bir sonraki sürümde yayımlanacak değerler.
+> **Sürüm notu**: GitHub'da yayımlanan DMG **v1.5.2-plus (build 8)** sürümüdür; bu sayfadaki değerler bu sürüme aittir. Önceki v1.5.0-plus (build 6) `MallocSpaceEfficient` ve fotoğrafları isteğe bağlı çözme özelliğini içermiyordu, belleği resmi sürümle aynı düzeydeydi.
 
 #### 2. Resmi sürümde bulunmayan bellek ve CPU iyileştirmeleri
 
@@ -64,9 +64,9 @@
 
 #### 4. Resmi sürümle aynı kalanlar
 
-- İşlevler, hareketler, kısayollar, 10 dil ve gizlilik tasarımı (hesap yok, ağ erişimi yok, analitik yok) değişmedi; bu dal hiçbir işlev eklemez veya kaldırmaz, menüye yalnızca bir marka satırı eklenir.
+- Kısayollar, 10 dil ve gizlilik tasarımı (hesap yok, ağ erişimi yok, analitik yok) değişmedi; eklenen tek hareket **işaretçiyi fotoğrafın üzerinde tutup Boşluk** ile önizlemedir, geri kalanı resmi sürümle aynıdır ve menüye yalnızca bir marka satırı eklenir.
 - Lisans değişmedi: kod MIT; `Tendedero` adı ve simgesi MIT lisansına dahil değildir.
-- Farkları kendiniz doğrulayın: `git remote add upstream https://github.com/alejandrobujan/tendedero.git` komutunu çalıştırın, ardından `git log --oneline upstream/main..HEAD` (şu anda 7 commit, 33 dosya).
+- Farkları kendiniz doğrulayın: `git remote add upstream https://github.com/alejandrobujan/tendedero.git` komutunu çalıştırın, ardından `git log --oneline upstream/main..HEAD` (şu anda 11 commit, 42 dosya).
 
 ---
 
